@@ -1,0 +1,78 @@
+# Time Capsule · App móvil (Android)
+
+Cápsulas del tiempo digitales con fotos, videos y cartas que solo se abren en una fecha
+o al volver a un lugar. Se comparten con familia y amigos, y la IA resume los recuerdos,
+crea una línea de tiempo interactiva y un mapa de recuerdos.
+
+## Qué necesitas
+- Android Studio (Ladybug o más nuevo)
+- Una cuenta gratis en https://supabase.com (cuentas, base de datos y archivos)
+- Una clave de API de Anthropic (https://console.anthropic.com) para la IA
+- Un celular Android 8 o superior, o el emulador de Android Studio
+
+## Paso 1 · Crear la nube en Supabase
+1. Entra a supabase.com → **New project**. Ponle `time-capsule`, crea una contraseña y elige la región más cercana.
+2. Espera 1–2 minutos a que termine de crearse.
+3. Menú izquierdo → **SQL Editor** → **New query**. Abre `supabase/1_base_de_datos.sql`,
+   copia todo, pégalo y pulsa **Run**. Debe decir *Success*.
+4. Menú → **Authentication** → **Sign In / Providers** → **Email** → desactiva **Confirm email** → Save.
+   (Así las cuentas funcionan al instante. Si lo dejas activo, cada persona debe confirmar su correo.)
+5. Menú → **Project Settings** → **API Keys**. Copia:
+   - **Project URL** (algo como `https://abcd1234.supabase.co`)
+   - La clave **anon public** (pestaña *Legacy API Keys*) o la **Publishable key**.
+
+## Paso 1b · Actualización 2 (clave de apertura)
+En **SQL Editor → New query** pega `supabase/2_clave_de_apertura.sql` y pulsa **Run**.
+
+## Paso 2 · Activar la IA
+1. Menú → **Edge Functions** → **Deploy a new function** → **Via Editor**.
+2. Nombre: `ai-memories`. Borra el código de ejemplo y pega todo `supabase/functions/ai-memories/index.ts`.
+3. Pulsa **Deploy function**.
+4. Menú → **Edge Functions** → **Secrets** → **Add new secret**:
+   - Name: `ANTHROPIC_API_KEY`  ·  Value: tu clave `sk-ant-…`
+
+## Paso 3 · Abrir el proyecto en Android Studio
+1. Descomprime `TimeCapsule.zip`.
+2. Android Studio → **File → Open** → elige la carpeta `TimeCapsule` → **Trust project**.
+3. Espera a que termine **Gradle sync** (la primera vez descarga librerías: 3–10 min).
+   Si te ofrece actualizar el *Android Gradle Plugin*, puedes aceptar.
+4. Abre `app/src/main/java/com/timecapsule/app/data/Config.kt` y pega tu URL y tu clave.
+
+## Paso 4 · Ejecutar
+- **En tu celular**: Ajustes → Acerca del teléfono → toca 7 veces *Número de compilación*.
+  Luego Ajustes → Opciones de desarrollador → activa **Depuración USB**. Conecta el cable y acepta.
+- **En el emulador**: Device Manager → **Create device** → Pixel 8 → imagen **con Google Play**.
+- Pulsa el botón verde ▶ **Run**.
+
+## Paso 5 · Generar el APK para instalarlo en otros celulares
+**Build → Generate Signed App Bundle / APK → APK** → crea un *keystore* nuevo (guárdalo bien) → **release**.
+El archivo queda en `app/release/app-release.apk`. Envíalo por WhatsApp o Drive y ábrelo en el celular
+(permite "instalar apps de origen desconocido").
+
+## Probar las funciones
+| Función | Cómo probarla |
+|---|---|
+| Apertura por fecha | Crea una cápsula y elige una hora 2 minutos en el futuro. Te llega la notificación y se abre sola. |
+| Recuerdos por lugar | Perfil → **Activar** recuerdos por ubicación → "Permitir todo el tiempo". Crea una cápsula con el lugar. En el emulador: **⋯ → Location**, mueve el punto lejos y luego de vuelta. |
+| Solo se abre en el lugar | Activa "Solo se abre estando en este lugar". En la cápsula pulsa **Estoy aquí, abrir**. |
+| Compartir | Crea una segunda cuenta y escribe su correo al crear o desde la cápsula. |
+| Resumen con IA | En una cápsula abierta con fotos → **Resumir este recuerdo**. |
+| Línea de tiempo y mapa | Pestañas **Línea de tiempo → Crear con IA** y **Mapa**. |
+
+## Qué archivo cambiar
+| Quiero cambiar… | Archivo |
+|---|---|
+| Colores y tipografía | `ui/theme/Theme.kt` |
+| Inicio de sesión | `ui/screens/AuthScreen.kt` |
+| Lista de cápsulas y pestañas | `ui/screens/HomeScreen.kt` y `Components.kt` |
+| Crear cápsula | `ui/screens/CreateCapsuleScreen.kt` |
+| Ver/abrir cápsula | `ui/screens/CapsuleDetailScreen.kt` |
+| Línea de tiempo / Mapa / Perfil | `TimelineScreen.kt` / `MapScreen.kt` / `ProfileScreen.kt` |
+| Textos de notificaciones | `notify/Workers.kt` y `geo/Receivers.kt` |
+| Lo que hace la IA | `supabase/functions/ai-memories/index.ts` |
+| Ícono de la app | `res/mipmap-*` (o clic derecho en `res` → New → Image Asset) |
+
+## Límites del plan gratis
+- Supabase gratis: 500 MB de base de datos, 1 GB de archivos y videos de máximo 50 MB.
+- Un proyecto gratis se pausa tras 7 días sin uso: entra al panel y pulsa *Restore*.
+- La IA consume créditos de tu cuenta de Anthropic (cada resumen cuesta centavos).
