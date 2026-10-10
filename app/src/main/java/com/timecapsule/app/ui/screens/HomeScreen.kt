@@ -1,5 +1,8 @@
 package com.timecapsule.app.ui.screens
 
+import com.timecapsule.app.ui.theme.NightSurface
+import com.timecapsule.app.ui.components.paper
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -59,12 +62,13 @@ fun HomeScreen(vm: MainViewModel, onCreate: () -> Unit, onOpen: (String) -> Unit
     LaunchedEffect(message) { message?.let { snack.showSnackbar(it); vm.message.value = null } }
 
     Scaffold(
-        containerColor = Night,
+        containerColor = Color.Transparent,
+        modifier = Modifier.paper(),
         snackbarHost = { SnackbarHost(snack) },
         topBar = {
             TopAppBar(
                 title = { Text(if (tab == 0) "Mis cápsulas" else tabs[tab].label, style = MaterialTheme.typography.headlineSmall) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Night),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
         floatingActionButton = {
@@ -75,7 +79,7 @@ fun HomeScreen(vm: MainViewModel, onCreate: () -> Unit, onOpen: (String) -> Unit
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = Night) {
+            NavigationBar(containerColor = NightSurface) {
                 tabs.forEachIndexed { i, t ->
                     NavigationBarItem(selected = tab == i, onClick = { tab = i },
                         icon = { Icon(t.icon, null) }, label = { Text(t.label, maxLines = 1) })

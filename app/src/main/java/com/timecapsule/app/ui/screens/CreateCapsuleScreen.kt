@@ -1,5 +1,7 @@
 package com.timecapsule.app.ui.screens
 
+import com.timecapsule.app.ui.components.paper
+import androidx.compose.ui.graphics.Color
 import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -211,12 +213,13 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
     }
 
     Scaffold(
-        containerColor = Night,
+        containerColor = Color.Transparent,
+        modifier = Modifier.paper(),
         topBar = {
             TopAppBar(
                 title = { Text("Nueva cápsula") },
                 navigationIcon = { IconButton(onClick = onBack, enabled = !saving) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") } },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Night),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
     ) { pad ->
@@ -247,7 +250,7 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
             }
             if (items.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 itemsIndexed(items, key = { _, item -> item.uri.toString() }) { i, item ->
-                    Box(Modifier.size(92.dp).clip(RoundedCornerShape(14.dp)).background(NightRaised)) {
+                    Box(Modifier.size(92.dp).clip(RoundedCornerShape(6.dp)).background(NightRaised)) {
                         if (item.kind == "photo") AsyncImage(item.uri, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                         else Icon(Icons.Filled.Videocam, "Video", tint = Gold, modifier = Modifier.align(Alignment.Center).size(36.dp))
                         IconButton(onClick = { items.removeAt(i) },
@@ -306,7 +309,7 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
                 if (on && lat == null) { if (LocationUtil.hasFine(ctx)) locate() else askLocation() }
             }
             if (usePlace) {
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(NightRaised).padding(14.dp),
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (locating) Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
