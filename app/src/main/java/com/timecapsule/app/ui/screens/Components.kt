@@ -1,6 +1,19 @@
 package com.timecapsule.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.shadow
+import androidx.compose.material.icons.filled.LockOpen
+import com.timecapsule.app.ui.components.Envelope
+import com.timecapsule.app.ui.components.Polaroid
+import com.timecapsule.app.ui.components.WaxSeal
+import com.timecapsule.app.ui.components.floating
+import com.timecapsule.app.ui.theme.LetterPaper
+import com.timecapsule.app.ui.theme.Line
+import com.timecapsule.app.ui.theme.NightRaised
+import com.timecapsule.app.ui.theme.Olive
+import com.timecapsule.app.ui.theme.Typewriter
+import com.timecapsule.app.ui.theme.Wax
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +28,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -55,30 +67,43 @@ fun CloudImage(path: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun CapsuleCard(c: Capsule, me: String?, onClick: () -> Unit) {
+    val readyHere = !c.isOpen && c.dateReady
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(NightSurface).clickable(onClick = onClick)
+        Modifier.fillMaxWidth().floating(phase = (c.id.hashCode() and 0xFFF))
+            .shadow(3.dp, RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(6.dp)).background(NightSurface).border(1.dp, Line, RoundedCornerShape(6.dp))
+            .clickable(onClick = onClick)
     ) {
-        Box(Modifier.fillMaxWidth().height(if (c.isOpen && c.coverPath != null) 170.dp else 96.dp)) {
+        Box(Modifier.fillMaxWidth().height(if (c.isOpen && c.coverPath != null) 190.dp else 118.dp), contentAlignment = Alignment.Center) {
             if (c.isOpen && c.coverPath != null) {
-                CloudImage(c.coverPath, Modifier.fillMaxSize())
-            } else {
-                Box(Modifier.fillMaxSize().background(if (c.isOpen) CapsuleGradient else LockedGradient))
-                if (!c.isOpen) Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Lock, null, tint = Gold)
-                    Spacer(Modifier.width(8.dp))
-                    Text(if (c.mediaCount > 0) "${c.mediaCount} recuerdos esperando" else "Carta sellada", color = Gold)
+                // Abierta: la portada como polaroid sobre papel
+                Box(Modifier.fillMaxSize().background(NightRaised))
+                Polaroid(Modifier.width(150.dp).padding(top = 12.dp), rotation = if (c.id.hashCode() % 2 == 0) -3f else 3f) {
+                    CloudImage(c.coverPath, Modifier.fillMaxSize())
                 }
+            } else if (c.isOpen) {
+                Box(Modifier.fillMaxSize().background(CapsuleGradient))
+                Icon(Icons.Filled.LockOpen, null, tint = LetterPaper, modifier = Modifier.size(34.dp))
+            } else {
+                // Cerrada: sobre sellado con lacre (brilla si ya se puede abrir)
+                Envelope(Modifier.fillMaxSize())
+                WaxSeal(size = 54.dp, glow = readyHere)
+                Text(
+                    if (c.mediaCount > 0) "${c.mediaCount} recuerdos esperando" else "Carta sellada",
+                    fontFamily = Typewriter, style = MaterialTheme.typography.labelSmall, color = Cream,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+                )
             }
         }
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(c.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
                 c.conditionText(),
-                color = if (c.isOpen) MaterialTheme.colorScheme.primary else Gold,
+                color = if (c.isOpen) Olive else Wax,
                 fontWeight = FontWeight.Medium,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Creada el ${c.createdInstant.fmtDate()}", color = Muted, style = MaterialTheme.typography.bodySmall)
+                Text("Sellada el ${c.createdInstant.fmtDate()}", color = Muted, fontFamily = Typewriter, style = MaterialTheme.typography.labelSmall)
                 if (c.isOpen && c.mediaCount > 0) Meta(Icons.Filled.PhotoLibrary, "${c.mediaCount}")
                 c.placeName?.let { Meta(Icons.Filled.Place, it) }
             }
