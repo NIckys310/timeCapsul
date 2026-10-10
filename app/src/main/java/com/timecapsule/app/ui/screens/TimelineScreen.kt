@@ -74,7 +74,7 @@ fun TimelineScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         item {
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(NightRaised).padding(18.dp),
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Meta(Icons.Filled.AutoAwesome, "Tu historia, contada por IA", Gold)
                 Text(tl?.resumen?.ifBlank { null } ?: "La IA agrupa tus cápsulas en capítulos de tu vida y cuenta lo que vivías en cada uno.",
@@ -117,7 +117,7 @@ private fun ChapterNode(ch: Chapter, caps: List<Capsule>, isLast: Boolean, onOpe
                 Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     caps.forEach { c ->
                         Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(NightSurface)
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightSurface)
                                 .clickable { onOpen(c.id) }.padding(10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {

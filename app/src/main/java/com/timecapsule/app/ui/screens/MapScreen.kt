@@ -130,7 +130,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         if (withPlace.isEmpty()) Text(
             "Cuando guardes una cápsula con la ubicación encendida, su lugar quedará marcado aquí.",
             color = Cream, modifier = Modifier.align(Alignment.TopCenter).padding(16.dp)
-                .clip(RoundedCornerShape(14.dp)).background(NightSurface).padding(14.dp),
+                .clip(RoundedCornerShape(6.dp)).background(NightSurface).padding(14.dp),
         ) else LazyRow(
             Modifier.align(Alignment.TopCenter).fillMaxWidth(),
             contentPadding = PaddingValues(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -163,7 +163,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             val samePlace = withPlace.count { LocationUtil.distanceMeters(it.lat!!, it.lng!!, c.lat!!, c.lng!!) < 150 }
             Column(
                 Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(14.dp)
-                    .clip(RoundedCornerShape(22.dp)).background(NightSurface).padding(18.dp),
+                    .clip(RoundedCornerShape(6.dp)).background(NightSurface).padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Meta(Icons.Filled.Place, c.placeName ?: "Lugar sin nombre", Gold)
