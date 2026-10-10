@@ -5,6 +5,8 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import com.timecapsule.app.ui.theme.Line
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +31,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.timecapsule.app.data.Repo
+import com.timecapsule.app.data.AppSettings
+import androidx.compose.material3.FilterChip
 import com.timecapsule.app.geo.GeofenceManager
 import com.timecapsule.app.notify.Notifier
 import com.timecapsule.app.ui.MainViewModel
@@ -88,13 +92,14 @@ fun ProfileScreen(vm: MainViewModel) {
             Text("Sin ellas no sabrás cuándo se abre una cápsula.", color = Muted)
             Button(onClick = { notifPerm.launch(Manifest.permission.POST_NOTIFICATIONS) }) { Text("Activar notificaciones") }
         }
+        LookCard()
         OutlinedButton(onClick = { vm.signOut() }, modifier = Modifier.fillMaxWidth()) { Text("Cerrar sesión") }
     }
 }
 
 @Composable
 private fun Card(content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(NightSurface).padding(18.dp),
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightSurface).border(1.dp, Line, RoundedCornerShape(6.dp)).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
 }
 
@@ -103,5 +108,32 @@ private fun Stat(value: String, label: String) {
     Column {
         Text(value, style = MaterialTheme.typography.headlineMedium, color = Cream)
         Text(label, color = Muted, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+/* ---------- Apariencia y accesibilidad ---------- */
+@Composable
+private fun LookCard() {
+    val ctx = LocalContext.current
+    val look by AppSettings.look.collectAsState()
+    Card {
+        Text("Apariencia y accesibilidad", style = MaterialTheme.typography.titleMedium, color = Cream)
+        Text("Tema", color = Muted, style = MaterialTheme.typography.bodySmall)
+        Choice(listOf("system" to "Automático", "light" to "Día", "dark" to "Noche"), look.theme) { v -> AppSettings.update(ctx) { it.copy(theme = v) } }
+        Text("Tamaño del texto", color = Muted, style = MaterialTheme.typography.bodySmall)
+        Choice(listOf("1.0" to "Normal", "1.15" to "Grande", "1.3" to "Muy grande"), look.textScale.toString()) { v -> AppSettings.update(ctx) { it.copy(textScale = v.toFloat()) } }
+        SwitchRow("Alto contraste", look.highContrast) { v -> AppSettings.update(ctx) { it.copy(highContrast = v) } }
+        SwitchRow("Animaciones", look.animations) { v -> AppSettings.update(ctx) { it.copy(animations = v) } }
+        SwitchRow("Vibrar al abrir una cápsula", look.vibrateOnOpen) { v -> AppSettings.update(ctx) { it.copy(vibrateOnOpen = v) } }
+        SwitchRow("Leer la carta en voz alta al abrir", look.readAloud) { v -> AppSettings.update(ctx) { it.copy(readAloud = v) } }
+    }
+}
+
+@Composable
+private fun Choice(options: List<Pair<String, String>>, selected: String, onPick: (String) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.forEach { (value, label) ->
+            FilterChip(selected = selected == value, onClick = { onPick(value) }, label = { Text(label) })
+        }
     }
 }

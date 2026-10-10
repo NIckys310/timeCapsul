@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.timecapsule.app.notify.Notifier
+import com.timecapsule.app.data.AppSettings
 import com.timecapsule.app.notify.SyncWorker
 import com.timecapsule.app.ui.screens.AuthScreen
 import com.timecapsule.app.ui.screens.CapsuleDetailScreen
@@ -46,8 +47,10 @@ class MainActivity : ComponentActivity() {
             notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
+        AppSettings.load(this)
         setContent {
-            TimeCapsuleTheme {
+            val look by AppSettings.look.collectAsState()
+            TimeCapsuleTheme(themeMode = look.theme, highContrast = look.highContrast, textScale = look.textScale) {
                 val vm: MainViewModel = viewModel()
                 val status by vm.session.collectAsState()
                 val nav = rememberNavController()
