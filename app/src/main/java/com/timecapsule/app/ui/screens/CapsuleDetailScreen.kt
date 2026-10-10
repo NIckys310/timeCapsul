@@ -85,6 +85,25 @@ import com.timecapsule.app.ui.theme.Night
 import com.timecapsule.app.ui.theme.NightRaised
 import com.timecapsule.app.ui.theme.NightSurface
 import com.timecapsule.app.util.LocationUtil
+import com.timecapsule.app.util.Speech
+import com.timecapsule.app.data.AppSettings
+import com.timecapsule.app.ui.components.FlipNumber
+import com.timecapsule.app.ui.components.OpeningCeremony
+import com.timecapsule.app.ui.components.Polaroid
+import com.timecapsule.app.ui.components.WaxSeal
+import com.timecapsule.app.ui.components.floating
+import com.timecapsule.app.ui.components.paper
+import com.timecapsule.app.ui.theme.LetterInk
+import com.timecapsule.app.ui.theme.LetterPaper
+import com.timecapsule.app.ui.theme.Line
+import com.timecapsule.app.ui.theme.Olive
+import com.timecapsule.app.ui.theme.Coral
+import com.timecapsule.app.ui.theme.Typewriter
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import com.timecapsule.app.util.fmtDate
 import com.timecapsule.app.util.fmtDateTime
 import kotlinx.coroutines.delay
@@ -104,6 +123,8 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
     var reload by remember { mutableStateOf(0) }
     var viewer by remember { mutableStateOf<Media?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var justOpened by remember { mutableStateOf(false) }
+    var ceremony by remember { mutableStateOf(false) }
     val me = Repo.userId()
 
     LaunchedEffect(id, reload) {
@@ -113,10 +134,13 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
             media = if (capsule?.isOpen == true) Repo.media(id) else emptyList()
         }.onFailure { msg = Repo.friendly(it) }
         loading = false
+        // Recién abierta: ceremonia del sello y, si está activado, lectura de la carta
+        if (justOpened && capsule?.isOpen == true) { ceremony = true; justOpened = false }
     }
 
     Scaffold(
-        containerColor = Night,
+        containerColor = Color.Transparent,
+        modifier = Modifier.paper(),
         topBar = {
             TopAppBar(
                 title = { },
@@ -124,7 +148,7 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
                 actions = {
                     if (capsule?.owner == me && capsule != null) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, "Eliminar") }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Night),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
     ) { pad ->
@@ -144,11 +168,11 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
                 buildString {
                     append("Sellada el ${c.createdInstant.fmtDate()}")
                     if (c.owner != me) append(" por ${c.ownerName ?: "alguien"}")
-                }, color = Muted,
+                }, color = Muted, fontFamily = Typewriter, style = MaterialTheme.typography.labelSmall,
             )
             c.placeName?.let { Meta(Icons.Filled.Place, it, Gold) }
 
-            if (!c.isOpen) LockedPanel(c, onOpened = { reload++; onChanged() }, onTimeUp = { reload++; onChanged() })
+            if (!c.isOpen) LockedPanel(c, onOpened = { justOpened = true; reload++; onChanged() }, onTimeUp = { justOpened = true; reload++; onChanged() })
             else OpenContent(c, media, onView = { viewer = it }, onSummary = { reload++ })
 
             if (c.owner == me) SharePanel(c.id)
@@ -158,6 +182,14 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
     }
 
     viewer?.let { m -> MediaViewer(m) { viewer = null } }
+
+    if (ceremony) capsule?.let { c ->
+        OpeningCeremony(c.title, media.filter { it.kind == "photo" }.map { it.path }) {
+            ceremony = false
+            if (AppSettings.look.value.readAloud && !c.letter.isNullOrBlank()) Speech.speak(ctx, c.letter)
+        }
+    }
+    DisposableEffect(Unit) { onDispose { Speech.stop() } }
 
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
@@ -211,11 +243,12 @@ private fun LockedPanel(c: Capsule, onOpened: () -> Unit, onTimeUp: () -> Unit) 
     val perm = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { tryOpenHere() }
 
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(LockedGradient).padding(24.dp),
+        Modifier.fillMaxWidth().floating(amplitude = 2.dp).clip(RoundedCornerShape(8.dp)).background(LockedGradient)
+            .border(1.dp, Line, RoundedCornerShape(8.dp)).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Icon(Icons.Filled.Lock, null, tint = Gold, modifier = Modifier.size(40.dp))
+        WaxSeal(size = 76.dp, glow = target == null || !now.isBefore(target))
         if (target != null && now.isBefore(target)) {
             Text("Se abre en", color = Muted)
             Countdown(Duration.between(now, target))
@@ -268,13 +301,8 @@ private fun Countdown(d: Duration) {
     val parts = listOf(
         d.toDays() to "días", d.toHours() % 24 to "horas", d.toMinutes() % 60 to "min", d.seconds % 60 to "seg",
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        parts.forEach { (v, l) ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("$v", style = MaterialTheme.typography.displaySmall, color = Cream)
-                Text(l, color = Muted, style = MaterialTheme.typography.bodySmall)
-            }
-        }
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        parts.forEach { (v, l) -> FlipNumber(v, l) }
     }
 }
 
@@ -286,10 +314,10 @@ private fun OpenContent(c: Capsule, media: List<Media>, onView: (Media) -> Unit,
     var aiBusy by remember { mutableStateOf(false) }
     var aiError by remember { mutableStateOf<String?>(null) }
 
-    Row(Modifier.clip(RoundedCornerShape(50)).background(CapsuleGradient).padding(horizontal = 14.dp, vertical = 6.dp),
+    Row(Modifier.clip(RoundedCornerShape(50)).background(Olive).padding(horizontal = 14.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Filled.LockOpen, null, tint = Color(0xFF2B0F17), modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(6.dp)); Text("Abierta", color = Color(0xFF2B0F17))
+        Icon(Icons.Filled.LockOpen, null, tint = LetterPaper, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(6.dp)); Text("Abierta", color = LetterPaper, fontFamily = Typewriter)
     }
 
     // Resumen con IA
@@ -316,25 +344,44 @@ private fun OpenContent(c: Capsule, media: List<Media>, onView: (Media) -> Unit,
 
     // Carta
     if (!c.letter.isNullOrBlank()) {
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Cream).padding(22.dp)) {
-            Text("Carta", color = Color(0xFF7A5C3A), style = MaterialTheme.typography.labelLarge)
-            Spacer(Modifier.height(8.dp))
-            Text(c.letter, color = Color(0xFF2A1F3D), style = MaterialTheme.typography.bodyLarge)
+        val ctx = LocalContext.current
+        var speaking by remember { mutableStateOf(false) }
+        val lineColor = Line
+        val marginColor = Coral.copy(alpha = 0.35f)
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(LetterPaper)
+                .drawBehind {
+                    // Renglones y margen rojo como en una hoja de cuaderno antigua
+                    val step = 28.dp.toPx()
+                    var y = 56.dp.toPx()
+                    while (y < size.height) { drawLine(lineColor.copy(alpha = 0.55f), Offset(0f, y), Offset(size.width, y), 1f); y += step }
+                    drawLine(marginColor, Offset(36.dp.toPx(), 0f), Offset(36.dp.toPx(), size.height), 2f)
+                }
+                .padding(start = 46.dp, end = 18.dp, top = 18.dp, bottom = 22.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Carta", color = Color(0xFF7A5C3A), fontFamily = Typewriter, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                IconButton(onClick = {
+                    if (speaking) { Speech.stop(); speaking = false } else { Speech.speak(ctx, c.letter); speaking = true }
+                }) { Icon(if (speaking) Icons.Filled.Stop else Icons.AutoMirrored.Filled.VolumeUp, if (speaking) "Detener lectura" else "Leer en voz alta", tint = Color(0xFF7A5C3A)) }
+            }
+            Text(c.letter, color = LetterInk, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.75f))
         }
     }
 
     // Galería
     if (media.isNotEmpty()) {
         Text("Recuerdos (${media.size})", style = MaterialTheme.typography.titleMedium)
-        media.chunked(3).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                row.forEach { m ->
-                    Box(Modifier.weight(1f).aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(NightSurface).clickable { onView(m) }) {
+        media.chunked(2).forEachIndexed { r, row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+                row.forEachIndexed { i, m ->
+                    val tilt = listOf(-3f, 2.5f, 1.5f, -2f)[(r * 2 + i) % 4]
+                    Polaroid(Modifier.weight(1f).clickable { onView(m) }, rotation = tilt) {
                         if (m.kind == "photo") CloudImage(m.path, Modifier.fillMaxSize())
                         else Icon(Icons.Filled.PlayCircle, "Video", tint = Gold, modifier = Modifier.align(Alignment.Center).size(44.dp))
                     }
                 }
-                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                repeat(2 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
