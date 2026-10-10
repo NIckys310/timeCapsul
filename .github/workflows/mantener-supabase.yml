@@ -1,0 +1,25 @@
+# =========================================================
+# Mantiene despiertos los proyectos gratis de Supabase.
+# Supabase pausa los proyectos gratis tras 7 días sin uso;
+# esta tarea los consulta cada 3 días para que eso no pase.
+# Usa solo las claves "publishable" (públicas).
+# =========================================================
+name: Mantener Supabase despierto
+
+on:
+  schedule:
+    - cron: "17 13 */3 * *"   # cada 3 días, 8:17 a. m. en Colombia
+  workflow_dispatch: {}        # también se puede correr a mano en la pestaña Actions
+
+jobs:
+  despertar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Time Capsule
+        run: |
+          curl -sf "https://frascwpukyygsaeeohnr.supabase.co/rest/v1/capsules_feed?select=id&limit=1" \
+            -H "apikey: sb_publishable_HlD6zjfxofaUGFguDr5yNQ_7K5CVBPY" -o /dev/null -w "Time Capsule: %{http_code}\n"
+      - name: Guardián
+        run: |
+          curl -sf "https://jktmtdpgvjlrdxqmdbrp.supabase.co/rest/v1/species?select=id&limit=1" \
+            -H "apikey: sb_publishable_Z33OvW2c8XZvI7G9AbgrRA_N4yqqYwi" -o /dev/null -w "Guardián: %{http_code}\n"
