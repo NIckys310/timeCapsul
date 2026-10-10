@@ -15,11 +15,14 @@ jobs:
   despertar:
     runs-on: ubuntu-latest
     steps:
-      - name: Time Capsule
+      - name: Consultar los proyectos
         run: |
-          curl -sf "https://frascwpukyygsaeeohnr.supabase.co/rest/v1/capsules_feed?select=id&limit=1" \
-            -H "apikey: sb_publishable_HlD6zjfxofaUGFguDr5yNQ_7K5CVBPY" -o /dev/null -w "Time Capsule: %{http_code}\n"
-      - name: Guardián
-        run: |
-          curl -sf "https://jktmtdpgvjlrdxqmdbrp.supabase.co/rest/v1/species?select=id&limit=1" \
-            -H "apikey: sb_publishable_Z33OvW2c8XZvI7G9AbgrRA_N4yqqYwi" -o /dev/null -w "Guardián: %{http_code}\n"
+          # Cualquier respuesta de la base (200 o 401) cuenta como actividad.
+          # Solo falla si el proyecto no responde o ya está pausado.
+          check () {
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$2" -H "apikey: $3")
+            echo "$1: $code"
+            case "$code" in 2*|401|403|404) ;; *) echo "::error::$1 no respondió ($code). Entra a Supabase y toca Restore."; exit 1;; esac
+          }
+          check "Time Capsule" "https://frascwpukyygsaeeohnr.supabase.co/rest/v1/capsules_feed?select=id&limit=1" "sb_publishable_HlD6zjfxofaUGFguDr5yNQ_7K5CVBPY"
+          check "Guardián" "https://jktmtdpgvjlrdxqmdbrp.supabase.co/rest/v1/species?select=id&limit=1" "sb_publishable_Z33OvW2c8XZvI7G9AbgrRA_N4yqqYwi"
