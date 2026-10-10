@@ -321,7 +321,7 @@ private fun OpenContent(c: Capsule, media: List<Media>, onView: (Media) -> Unit,
     }
 
     // Resumen con IA
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(NightRaised).padding(18.dp),
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Meta(Icons.Filled.AutoAwesome, "Recuerdo resumido por IA", Gold)
         when {
@@ -429,7 +429,7 @@ private fun SharePanel(capsuleId: String) {
     var busy by remember { mutableStateOf(false) }
     LaunchedEffect(capsuleId) { members = runCatching { Repo.members(capsuleId) }.getOrDefault(emptyList()) }
 
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(NightSurface).padding(18.dp),
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightSurface).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Meta(Icons.Filled.People, "Compartida con", Cream)
         if (members.isEmpty()) Text("Solo tú por ahora.", color = Muted)
