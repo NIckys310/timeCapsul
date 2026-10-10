@@ -86,7 +86,10 @@ object Repo {
             NewCapsule(
                 title = d.title.trim(), letter = d.letter.trim(), ownerName = userName(),
                 unlockAt = d.unlockAt?.toString(), placeName = d.placeName?.trim()?.ifBlank { null },
-                lat = d.lat, lng = d.lng, radiusM = 150, requirePlace = d.requirePlace,
+                lat = d.lat, lng = d.lng, radiusM = d.radiusM, requirePlace = d.requirePlace,
+                songUrl = d.songUrl?.trim()?.ifBlank { null }, songTitle = d.songTitle?.trim()?.ifBlank { null },
+                template = d.template, questions = d.questions.map { it.trim() }.filter { it.isNotEmpty() },
+                openTogether = d.openTogether, routeId = d.routeId, routeOrder = d.routeOrder,
             )
         ) { select(Columns.list("id")) }.decodeSingle<IdOnly>().id
 
@@ -109,13 +112,19 @@ object Repo {
                 upsert = false
                 contentType = ContentType.parse(mime)
             }
-            supabase.from("capsule_media").insert(NewMedia(id, path, item.kind))
+            supabase.from("capsule_media").insert(NewMedia(id, path, item.kind, userName()))
+        }
+
+        // Notas de voz (grabadas en el celular, formato m4a)
+        d.voiceNotes.forEachIndexed { i, file ->
+            onProgress("Subiendo nota de voz ${i + 1}…", 0.92f)
+            uploadAudio(uid, id, file)
         }
 
         val notFound = mutableListOf<String>()
         d.shareEmails.filter { it.isNotBlank() }.forEach { email ->
             onProgress("Compartiendo con $email…", 0.95f)
-            runCatching { share(id, email) }.onFailure { notFound += email }
+            runCatching { share(id, email, d.shareContribute) }.onFailure { notFound += email }
         }
         onProgress(if (notFound.isEmpty()) "¡Listo!" else "Listo. Sin cuenta: ${notFound.joinToString()}", 1f)
         id
@@ -129,14 +138,95 @@ object Repo {
     suspend fun openWithKey(id: String, key: String): Boolean =
         supabase.postgrest.rpc("open_with_key", buildJsonObject { put("cid", id); put("k", key) }).decodeAs<Boolean>()
 
-    /** Comparte con otra persona que ya tenga cuenta. Devuelve su nombre. */
-    suspend fun share(capsuleId: String, email: String): String {
-        val found = supabase.postgrest.rpc("find_user", buildJsonObject { put("e", email.trim()) })
-            .decodeList<FoundUser>().firstOrNull()
-            ?: error("No hay ninguna cuenta con $email. Pídele que se registre en Time Capsule.")
-        supabase.from("capsule_shares").insert(NewShare(capsuleId, found.id))
-        return found.name ?: email
+    /** Comparte con otra persona que ya tenga cuenta. contribute = puede agregar fotos y cartas. */
+    suspend fun share(capsuleId: String, email: String, contribute: Boolean = false): String =
+        supabase.postgrest.rpc("share_with", buildJsonObject { put("cid", capsuleId); put("e", email.trim()); put("contribute", contribute) })
+            .decodeAs<String>()
+
+    private suspend fun uploadAudio(uid: String, capsuleId: String, file: java.io.File) {
+        val path = "$uid/$capsuleId/${UUID.randomUUID()}.m4a"
+        supabase.storage.from(BUCKET).upload(path, file.readBytes()) { upsert = false; contentType = ContentType.parse("audio/mp4") }
+        supabase.from("capsule_media").insert(NewMedia(capsuleId, path, "audio", userName()))
     }
+
+    /* ---------------- Colaborar (agregar a una cápsula ya creada) ---------------- */
+
+    suspend fun addItems(ctx: Context, capsuleId: String, items: List<PickedItem>, voice: List<java.io.File>, onProgress: (String) -> Unit) = withContext(Dispatchers.IO) {
+        val uid = userId() ?: error("Inicia sesión de nuevo")
+        items.forEachIndexed { i, item ->
+            onProgress("Subiendo ${i + 1} de ${items.size}…")
+            val (bytes, ext, mime) = if (item.kind == "video") {
+                val m = MediaUtil.mime(ctx, item.uri)
+                Triple(MediaUtil.readVideo(ctx, item.uri), if (m.contains("quicktime")) "mov" else "mp4", m)
+            } else Triple(MediaUtil.compressPhoto(ctx, item.uri), "jpg", "image/jpeg")
+            val path = "$uid/$capsuleId/${UUID.randomUUID()}.$ext"
+            supabase.storage.from(BUCKET).upload(path, bytes) { upsert = false; contentType = ContentType.parse(mime) }
+            supabase.from("capsule_media").insert(NewMedia(capsuleId, path, item.kind, userName()))
+        }
+        voice.forEach { onProgress("Subiendo nota de voz…"); uploadAudio(uid, capsuleId, it) }
+    }
+
+    suspend fun letters(capsuleId: String): List<Letter> =
+        supabase.from("capsule_letters").select { filter { eq("capsule_id", capsuleId) }; order("created_at", Order.ASCENDING) }.decodeList()
+
+    suspend fun addLetter(capsuleId: String, body: String) {
+        supabase.from("capsule_letters").insert(NewLetter(capsuleId, userName(), body.trim()))
+    }
+
+    /* ---------------- Reacciones, comentarios y respuestas ---------------- */
+
+    suspend fun reactions(capsuleId: String): List<Reaction> =
+        supabase.from("capsule_reactions").select { filter { eq("capsule_id", capsuleId) } }.decodeList()
+
+    suspend fun react(capsuleId: String, emoji: String?) {
+        val me = userId() ?: return
+        supabase.from("capsule_reactions").delete { filter { eq("capsule_id", capsuleId); eq("user_id", me) } }
+        if (emoji != null) supabase.from("capsule_reactions").insert(NewReaction(capsuleId, emoji))
+    }
+
+    suspend fun comments(capsuleId: String): List<Comment> =
+        supabase.from("capsule_comments").select { filter { eq("capsule_id", capsuleId) }; order("created_at", Order.ASCENDING) }.decodeList()
+
+    suspend fun addComment(capsuleId: String, body: String) {
+        supabase.from("capsule_comments").insert(NewComment(capsuleId, userName(), body.trim()))
+    }
+
+    suspend fun deleteComment(id: String) { supabase.from("capsule_comments").delete { filter { eq("id", id) } } }
+
+    suspend fun answers(capsuleId: String): List<Answer> =
+        supabase.from("capsule_answers").select { filter { eq("capsule_id", capsuleId) } }.decodeList()
+
+    suspend fun saveAnswer(capsuleId: String, idx: Int, answer: String) {
+        supabase.from("capsule_answers").upsert(NewAnswer(capsuleId, idx, answer.trim()))
+    }
+
+    /* ---------------- Abrir juntos e invitaciones ---------------- */
+
+    suspend fun voteOpen(capsuleId: String): Boolean =
+        supabase.postgrest.rpc("vote_open", buildJsonObject { put("cid", capsuleId) }).decodeAs<Boolean>()
+
+    suspend fun createInvite(capsuleId: String, contribute: Boolean): String =
+        supabase.postgrest.rpc("create_invite", buildJsonObject { put("cid", capsuleId); put("contribute", contribute) }).decodeAs<String>()
+
+    suspend fun acceptInvite(code: String): String =
+        supabase.postgrest.rpc("accept_invite", buildJsonObject { put("p_code", code) }).decodeAs<String>()
+
+    /* ---------------- Rutas de cápsulas ---------------- */
+
+    suspend fun routes(): List<Route> =
+        supabase.from("capsule_routes").select { order("created_at", Order.DESCENDING) }.decodeList()
+
+    /** Posición de la próxima cápsula en la ruta (1, 2, 3…). */
+    suspend fun nextRouteOrder(routeId: String): Int =
+        supabase.from("capsules_feed").select(Columns.list("id")) { filter { eq("route_id", routeId) } }.decodeList<IdOnly>().size + 1
+
+    suspend fun createRoute(title: String): Route =
+        supabase.from("capsule_routes").insert(NewRoute(title.trim())) { select() }.decodeSingle()
+
+    /* ---------------- Actividad de amigos ---------------- */
+
+    suspend fun recentActivity(sinceIso: String): List<Activity> =
+        supabase.postgrest.rpc("recent_activity", buildJsonObject { put("since", sinceIso) }).decodeList()
 
     suspend fun members(capsuleId: String): List<Member> =
         supabase.postgrest.rpc("capsule_members", buildJsonObject { put("cid", capsuleId) }).decodeList()
@@ -180,6 +270,8 @@ object Repo {
             m.contains("Password should be", true) -> "La contraseña debe tener al menos 6 caracteres."
             m.contains("Unable to resolve host", true) || m.contains("timeout", true) -> "Sin conexión a internet."
             m.contains("Payload too large", true) || m.contains("exceeded the maximum", true) -> "Un archivo supera el límite de 50 MB."
+            m.contains("Máximo", true) -> "Máximo" + m.substringAfter("Máximo").lineSequence().first()
+            m.contains("Demasiados intentos", true) -> "Demasiados intentos. Espera 15 minutos para volver a probar."
             m.contains("TU-PROYECTO") -> "Falta configurar Supabase en Config.kt."
             m.isNotBlank() && m.length < 160 -> m
             else -> "Algo salió mal. Intenta de nuevo."
