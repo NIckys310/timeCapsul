@@ -1,5 +1,11 @@
 package com.timecapsule.app.ui.screens
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Box
+import com.timecapsule.app.ui.theme.Typewriter
+import com.timecapsule.app.ui.components.WaxSeal
+import com.timecapsule.app.ui.components.floating
+import com.timecapsule.app.ui.components.paper
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -72,14 +78,17 @@ fun AuthScreen() {
     }
 
     Column(
-        Modifier.fillMaxSize().systemBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(28.dp),
+        Modifier.fillMaxSize().paper().systemBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Image(painterResource(R.drawable.logo), null, Modifier.size(120.dp).clip(RoundedCornerShape(28.dp)))
-        Spacer(Modifier.height(20.dp))
+        Box(contentAlignment = Alignment.BottomEnd) {
+            Image(painterResource(R.drawable.logo), null, Modifier.size(120.dp).floating(amplitude = 4.dp).clip(RoundedCornerShape(6.dp)))
+            WaxSeal(Modifier.offset(x = 14.dp, y = 14.dp), size = 46.dp, glow = true)
+        }
+        Spacer(Modifier.height(24.dp))
         Text("Time Capsule", style = MaterialTheme.typography.displaySmall)
-        Text("Guarda hoy lo que querrás revivir mañana.", color = Muted, textAlign = TextAlign.Center)
+        Text("Guarda hoy lo que querrás revivir mañana.", color = Muted, textAlign = TextAlign.Center, fontFamily = Typewriter)
         Spacer(Modifier.height(28.dp))
 
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
