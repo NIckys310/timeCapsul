@@ -78,6 +78,7 @@ class SyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, 
         if (Repo.userId() == null) return Result.success()
         Sync.apply(applicationContext, Repo.feed(), notifyNew = true)
         Sync.activity(applicationContext)
+        Sync.yearAgo(applicationContext)
         Result.success()
     }.getOrElse { Result.retry() }
 
@@ -106,6 +107,18 @@ object Sync {
         Prefs.setSynced(ctx)
         list.filter { !it.dateReady }.forEach { UnlockWorker.schedule(ctx, it) }
         GeofenceManager.update(ctx, list)
+    }
+
+    /** Una vez al día: "Hace un año guardaste…" (lo escribe la IA). */
+    suspend fun yearAgo(ctx: Context) {
+        val p = ctx.getSharedPreferences("timecapsule", Context.MODE_PRIVATE)
+        val today = java.time.LocalDate.now().toString()
+        if (p.getString("yearAgoDay", null) == today) return
+        p.edit().putString("yearAgoDay", today).apply()
+        val r = runCatching { Repo.aiYearAgo() }.getOrNull() ?: return
+        if (p.getString("yearAgoLast", null) == r.second) return
+        p.edit().putString("yearAgoLast", r.second).apply()
+        Notifier.show(ctx, ("y" + r.second).hashCode(), Notifier.CH_REMINDER, "📸 Hace un año: “${r.third}”", r.first, r.second)
     }
 
     /** Avisa cuando alguien reacciona o comenta en tus cápsulas. */
