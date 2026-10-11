@@ -172,8 +172,20 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
             )
             c.placeName?.let { Meta(Icons.Filled.Place, it, Gold) }
 
-            if (!c.isOpen) LockedPanel(c, onOpened = { justOpened = true; reload++; onChanged() }, onTimeUp = { justOpened = true; reload++; onChanged() })
-            else OpenContent(c, media, onView = { viewer = it }, onSummary = { reload++ })
+            RouteBadge(c)
+            if (!c.isOpen) {
+                LockedPanel(c, onOpened = { justOpened = true; reload++; onChanged() }, onTimeUp = { justOpened = true; reload++; onChanged() })
+                OpenTogetherPanel(c, onOpened = { justOpened = true; reload++; onChanged() })
+                ContributePanel(c, onAdded = { reload++ })
+            } else {
+                OpenContent(c, media.filter { it.kind != "audio" }, onView = { viewer = it }, onSummary = { reload++ })
+                SongCard(c)
+                VoiceNotes(media)
+                ContributorLetters(c)
+                QuestionsCard(c)
+                ReactionsBar(c)
+                CommentsCard(c)
+            }
 
             if (c.owner == me) SharePanel(c.id)
             msg?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -425,6 +437,7 @@ private fun SharePanel(capsuleId: String) {
     val scope = rememberCoroutineScope()
     var members by remember { mutableStateOf<List<Member>>(emptyList()) }
     var email by remember { mutableStateOf("") }
+    var contribute by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     LaunchedEffect(capsuleId) { members = runCatching { Repo.members(capsuleId) }.getOrDefault(emptyList()) }
@@ -438,12 +451,14 @@ private fun SharePanel(capsuleId: String) {
         Button(onClick = {
             busy = true; note = null
             scope.launch {
-                runCatching { Repo.share(capsuleId, email) }
+                runCatching { Repo.share(capsuleId, email, contribute) }
                     .onSuccess { name -> note = "Compartida con $name"; email = ""; members = runCatching { Repo.members(capsuleId) }.getOrDefault(members) }
                     .onFailure { note = Repo.friendly(it) }
                 busy = false
             }
         }, enabled = email.contains('@') && !busy) { Text("Compartir") }
+        SwitchRow("Que pueda agregar sus fotos y cartas", contribute) { contribute = it }
         note?.let { Text(it, color = Gold) }
+        InviteButton(capsuleId)
     }
 }
