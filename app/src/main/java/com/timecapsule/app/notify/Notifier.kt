@@ -16,8 +16,10 @@ import com.timecapsule.app.R
 import com.timecapsule.app.ui.MainActivity
 
 object Notifier {
-    const val CH_UNLOCK = "unlock"
-    const val CH_PLACE = "place"
+    const val CH_UNLOCK = "unlock_v2"
+    const val CH_PLACE = "place_v2"
+    /** Vibración de Time Capsule: corto-corto-largo (como un latido), se siente distinta en el reloj. */
+    private val PATTERN = longArrayOf(0, 120, 90, 120, 90, 420)
     const val CH_SHARE = "share"
     const val CH_ACTIVITY = "activity"
     const val CH_REMINDER = "reminder"
@@ -25,8 +27,11 @@ object Notifier {
 
     fun createChannels(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CH_UNLOCK, "Cápsulas que se abren", NotificationManager.IMPORTANCE_HIGH))
-        nm.createNotificationChannel(NotificationChannel(CH_PLACE, "Recuerdos de lugares", NotificationManager.IMPORTANCE_HIGH))
+        listOf("unlock", "place").forEach { runCatching { nm.deleteNotificationChannel(it) } }
+        nm.createNotificationChannel(NotificationChannel(CH_UNLOCK, "Cápsulas que se abren", NotificationManager.IMPORTANCE_HIGH)
+            .apply { enableVibration(true); vibrationPattern = PATTERN })
+        nm.createNotificationChannel(NotificationChannel(CH_PLACE, "Recuerdos de lugares", NotificationManager.IMPORTANCE_HIGH)
+            .apply { enableVibration(true); vibrationPattern = PATTERN })
         nm.createNotificationChannel(NotificationChannel(CH_SHARE, "Cápsulas compartidas", NotificationManager.IMPORTANCE_DEFAULT))
         nm.createNotificationChannel(NotificationChannel(CH_ACTIVITY, "Reacciones y comentarios", NotificationManager.IMPORTANCE_DEFAULT))
         nm.createNotificationChannel(NotificationChannel(CH_REMINDER, "Cuenta regresiva", NotificationManager.IMPORTANCE_DEFAULT))
