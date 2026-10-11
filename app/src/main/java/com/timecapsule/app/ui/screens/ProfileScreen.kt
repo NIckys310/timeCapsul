@@ -127,6 +127,18 @@ private fun LookCard() {
         SwitchRow("Vibrar al abrir una cápsula", look.vibrateOnOpen) { v -> AppSettings.update(ctx) { it.copy(vibrateOnOpen = v) } }
         SwitchRow("Leer la carta en voz alta al abrir", look.readAloud) { v -> AppSettings.update(ctx) { it.copy(readAloud = v) } }
     }
+    Card {
+        Text("Seguridad", style = MaterialTheme.typography.titleMedium, color = Cream)
+        val activity = ctx as androidx.fragment.app.FragmentActivity
+        SwitchRow("Bloquear con huella o PIN", look.appLock) { v ->
+            if (!v) AppSettings.update(ctx) { it.copy(appLock = false) }
+            else if (com.timecapsule.app.ui.components.canLock(activity))
+                com.timecapsule.app.ui.components.askUnlock(activity, onOk = { AppSettings.update(ctx) { it.copy(appLock = true) } }, onFail = {})
+        }
+        Text("Se pedirá al abrir la app y al volver después de 30 segundos.", color = Muted, style = MaterialTheme.typography.bodySmall)
+        SwitchRow("Ocultar en apps recientes y bloquear capturas", look.hideRecents) { v -> AppSettings.update(ctx) { it.copy(hideRecents = v) } }
+        Text("Las cápsulas con clave se bloquean 15 minutos tras 5 intentos fallidos. Tus fotos se guardan cifradas en un espacio privado de Supabase.", color = Muted, style = MaterialTheme.typography.bodySmall)
+    }
 }
 
 @Composable
