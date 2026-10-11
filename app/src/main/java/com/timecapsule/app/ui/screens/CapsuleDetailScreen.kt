@@ -88,6 +88,7 @@ import com.timecapsule.app.util.LocationUtil
 import com.timecapsule.app.util.Speech
 import com.timecapsule.app.data.AppSettings
 import com.timecapsule.app.ui.components.FlipNumber
+import com.timecapsule.app.ui.components.AlbumPlayer
 import com.timecapsule.app.ui.components.OpeningCeremony
 import com.timecapsule.app.ui.components.Polaroid
 import com.timecapsule.app.ui.components.WaxSeal
@@ -125,6 +126,7 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
     var confirmDelete by remember { mutableStateOf(false) }
     var justOpened by remember { mutableStateOf(false) }
     var ceremony by remember { mutableStateOf(false) }
+    var album by remember { mutableStateOf(false) }
     val me = Repo.userId()
 
     LaunchedEffect(id, reload) {
@@ -180,6 +182,11 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
                 ContributePanel(c, onAdded = { reload++ })
             } else {
                 OpenContent(c, media.filter { it.kind != "audio" }, onView = { viewer = it }, onSummary = { reload++ })
+                val photoPaths = media.filter { it.kind == "photo" }.map { it.path }
+                if (photoPaths.isNotEmpty()) Button(onClick = { album = true }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Filled.AutoAwesome, null); Spacer(Modifier.width(8.dp)); Text("Ver álbum animado")
+                }
+                if (album) AlbumPlayer(c, photoPaths) { album = false }
                 SongCard(c)
                 VoiceNotes(media)
                 ContributorLetters(c)
