@@ -69,6 +69,9 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     val withPlace = caps.filter { it.hasPlace }.sortedByDescending { it.createdInstant }
     var selected by remember { mutableStateOf<Capsule?>(null) }
     var hasLocation by remember { mutableStateOf(LocationUtil.hasFine(ctx)) }
+    // Brillo animado de los cofres cercanos (cambia de fase cada 0,5 s)
+    var phase by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(500); phase = (phase + 1) % 4 } }
 
     val map = remember {
         MapView(ctx).apply {
@@ -106,12 +109,23 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         AndroidView(factory = { map }, modifier = Modifier.fillMaxSize(), update = { m ->
             m.overlays.clear()
             if (hasLocation) m.overlays.add(myLocation)
+            val me = myLocation.myLocation
+            // Rutas: línea punteada que une las cápsulas en su orden
+            withPlace.filter { it.routeId != null }.groupBy { it.routeId }.values.forEach { stops ->
+                val pts = stops.sortedBy { it.routeOrder ?: 0 }.map { GeoPoint(it.lat!!, it.lng!!) }
+                if (pts.size > 1) m.overlays.add(org.osmdroid.views.overlay.Polyline(m).apply {
+                    setPoints(pts)
+                    outlinePaint.color = 0xFFB8893A.toInt(); outlinePaint.strokeWidth = 7f
+                    outlinePaint.pathEffect = android.graphics.DashPathEffect(floatArrayOf(22f, 16f), phase * 9.5f)
+                })
+            }
             withPlace.forEach { c ->
                 m.overlays.add(Marker(m).apply {
                     position = GeoPoint(c.lat!!, c.lng!!)
                     title = c.placeName ?: c.title
                     snippet = c.title
-                    icon = pin(if (c.isOpen) 0xFFFF8A7A.toInt() else 0xFFFFD98A.toInt())
+                    val near = me != null && LocationUtil.distanceMeters(me.latitude, me.longitude, c.lat!!, c.lng!!) <= 500
+                    icon = chest(m.context, open = c.isOpen, glow = if (near && !c.isOpen) phase else -1)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     setOnMarkerClickListener { _, _ -> selected = c; true }
                 })
@@ -182,9 +196,30 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
 }
 
 /** Punto redondo con borde, del color del estado de la cápsula. */
-private fun pin(color: Int) = GradientDrawable().apply {
-    shape = GradientDrawable.OVAL
-    setColor(color)
-    setStroke(6, 0xFF1A1236.toInt())
-    setSize(56, 56)
+/** Cofre dibujado: cerrado (madera con cerradura dorada) o abierto (con luz). glow 0..3 = brillo animado. */
+private fun chest(ctx: android.content.Context, open: Boolean, glow: Int): android.graphics.drawable.BitmapDrawable {
+    val s = 96
+    val b = android.graphics.Bitmap.createBitmap(s, s, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(b)
+    val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+    if (glow >= 0) {   // halo dorado que late
+        p.color = 0xFFE2B865.toInt(); p.alpha = 60 + glow * 35
+        c.drawCircle(s / 2f, s / 2f, 30f + glow * 4f, p)
+    }
+    if (open) { p.color = 0xFFFFE9A8.toInt(); p.alpha = 200; c.drawCircle(s / 2f, 40f, 22f, p) }
+    p.alpha = 255
+    // cuerpo
+    p.color = 0xFF7A4A28.toInt(); c.drawRoundRect(22f, 46f, 74f, 78f, 6f, 6f, p)
+    // tapa (inclinada si está abierto)
+    c.save()
+    if (open) c.rotate(-28f, 22f, 46f)
+    p.color = 0xFF94592F.toInt(); c.drawRoundRect(20f, 30f, 76f, 48f, 10f, 10f, p)
+    c.restore()
+    // herrajes dorados
+    p.color = 0xFFB8893A.toInt()
+    c.drawRect(22f, 56f, 74f, 61f, p)
+    if (!open) c.drawRoundRect(42f, 40f, 54f, 58f, 3f, 3f, p)
+    p.style = android.graphics.Paint.Style.STROKE; p.strokeWidth = 3f; p.color = 0xFF3B2416.toInt()
+    c.drawRoundRect(22f, 46f, 74f, 78f, 6f, 6f, p)
+    return android.graphics.drawable.BitmapDrawable(ctx.resources, b)
 }
