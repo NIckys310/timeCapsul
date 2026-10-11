@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo: sobre crema inclinado, sellado con lacre rojo y un reloj de arena dorado, con destellos -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:rotation="-9" android:pivotX="54" android:pivotY="56">
+        <!-- sombra -->
+        <path android:pathData="M31,43h50v32h-50z" android:fillColor="#55000000" />
+        <!-- cuerpo del sobre -->
+        <path android:pathData="M29,40h50v32h-50z" android:strokeColor="#FFC9A14A" android:strokeWidth="1.4">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear" android:startX="29" android:startY="40" android:endX="79" android:endY="72">
+                    <item android:offset="0" android:color="#FFFBF2DF" />
+                    <item android:offset="1" android:color="#FFE9D6B2" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <!-- pliegues de abajo -->
+        <path android:pathData="M29,72 L54,54 L79,72" android:strokeColor="#FFD2B98C" android:strokeWidth="1.2" android:fillColor="#00000000" />
+        <!-- solapa -->
+        <path android:pathData="M29,40 L54,59 L79,40 Z" android:fillColor="#FFF0E2C4" android:strokeColor="#FFC9A14A" android:strokeWidth="1.4" />
+        <!-- sello de lacre -->
+        <path android:pathData="M54,59m-10.5,0a10.5,10.5 0,1 1,21 0a10.5,10.5 0,1 1,-21 0">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="radial" android:centerX="50" android:centerY="55" android:gradientRadius="13">
+                    <item android:offset="0" android:color="#FFD0614C" />
+                    <item android:offset="1" android:color="#FF7A2A20" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path android:pathData="M54,59m-7,0a7,7 0,1 1,14 0a7,7 0,1 1,-14 0" android:strokeColor="#995A1E16" android:strokeWidth="0.9" android:fillColor="#00000000" />
+        <!-- reloj de arena dorado grabado en el lacre -->
+        <path android:pathData="M50.5,54.5 L57.5,54.5 L54,59 L57.5,63.5 L50.5,63.5 L54,59 Z" android:strokeColor="#FFF2C14E" android:strokeWidth="1.1" android:fillColor="#33F2C14E" />
+        <!-- brillo del lacre -->
+        <path android:pathData="M49.5,54.5m-1.8,0a1.8,1.8 0,1 1,3.6 0a1.8,1.8 0,1 1,-3.6 0" android:fillColor="#55FFFFFF" />
+    </group>
+    <!-- destellos dorados -->
+    <path android:pathData="M33,28 L34.2,31.8 L38,33 L34.2,34.2 L33,38 L31.8,34.2 L28,33 L31.8,31.8 Z" android:fillColor="#FFF2C14E" />
+    <path android:pathData="M74,28 L74.8,30.2 L77,31 L74.8,31.8 L74,34 L73.2,31.8 L71,31 L73.2,30.2 Z" android:fillColor="#FFF7DC8A" />
+    <path android:pathData="M81,70 L81.7,72.3 L84,73 L81.7,73.7 L81,76 L80.3,73.7 L78,73 L80.3,72.3 Z" android:fillColor="#CCF2C14E" />
+</vector>
