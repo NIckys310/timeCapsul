@@ -13,8 +13,8 @@ android {
         applicationId = "com.timecapsule.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "2.2 logo"
+        versionCode = 5
+        versionName = "2.3"
     }
 
     buildTypes {
