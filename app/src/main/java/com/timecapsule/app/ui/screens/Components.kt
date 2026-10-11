@@ -1,5 +1,9 @@
 package com.timecapsule.app.ui.screens
 
+import androidx.compose.runtime.remember
+import com.timecapsule.app.ui.components.goldBorder
+import com.timecapsule.app.ui.components.pressScale
+import com.timecapsule.app.ui.components.enterAnim
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.shadow
@@ -66,13 +70,15 @@ fun CloudImage(path: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun CapsuleCard(c: Capsule, me: String?, onClick: () -> Unit) {
+fun CapsuleCard(c: Capsule, me: String?, index: Int = 0, onClick: () -> Unit) {
     val readyHere = !c.isOpen && c.dateReady
+    val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Column(
-        Modifier.fillMaxWidth().floating(phase = (c.id.hashCode() and 0xFFF))
-            .shadow(3.dp, RoundedCornerShape(6.dp))
-            .clip(RoundedCornerShape(6.dp)).background(NightSurface).border(1.dp, Line, RoundedCornerShape(6.dp))
-            .clickable(onClick = onClick)
+        Modifier.fillMaxWidth().enterAnim(delayMs = (index * 70).coerceAtMost(560)).floating(phase = (c.id.hashCode() and 0xFFF))
+            .pressScale(press)
+            .shadow(4.dp, RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(8.dp)).background(NightSurface).goldBorder(RoundedCornerShape(8.dp))
+            .clickable(interactionSource = press, indication = androidx.compose.material3.ripple(), onClick = onClick)
     ) {
         Box(Modifier.fillMaxWidth().height(if (c.isOpen && c.coverPath != null) 190.dp else 118.dp), contentAlignment = Alignment.Center) {
             if (c.isOpen && c.coverPath != null) {

@@ -1,5 +1,7 @@
 package com.timecapsule.app.ui.screens
 
+import com.timecapsule.app.ui.components.goldBorder
+import com.timecapsule.app.ui.components.enterAnim
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -99,7 +101,7 @@ fun ProfileScreen(vm: MainViewModel) {
 
 @Composable
 private fun Card(content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightSurface).border(1.dp, Line, RoundedCornerShape(6.dp)).padding(18.dp),
+    Column(Modifier.fillMaxWidth().enterAnim().clip(RoundedCornerShape(8.dp)).background(NightSurface).goldBorder(RoundedCornerShape(8.dp)).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
 }
 

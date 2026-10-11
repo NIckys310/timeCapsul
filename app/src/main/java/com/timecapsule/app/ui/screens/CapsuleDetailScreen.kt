@@ -88,6 +88,7 @@ import com.timecapsule.app.util.LocationUtil
 import com.timecapsule.app.util.Speech
 import com.timecapsule.app.data.AppSettings
 import com.timecapsule.app.ui.components.FlipNumber
+import com.timecapsule.app.ui.components.goldBorder
 import com.timecapsule.app.ui.components.AlbumPlayer
 import com.timecapsule.app.ui.components.OpeningCeremony
 import com.timecapsule.app.ui.components.Polaroid
@@ -264,7 +265,7 @@ private fun LockedPanel(c: Capsule, onOpened: () -> Unit, onTimeUp: () -> Unit) 
 
     Column(
         Modifier.fillMaxWidth().floating(amplitude = 2.dp).clip(RoundedCornerShape(8.dp)).background(LockedGradient)
-            .border(1.dp, Line, RoundedCornerShape(8.dp)).padding(24.dp),
+            .goldBorder(RoundedCornerShape(8.dp)).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {

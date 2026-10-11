@@ -1,5 +1,6 @@
 package com.timecapsule.app.ui.components
 
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -70,8 +71,20 @@ fun animationsOn(): Boolean = AppSettings.look.collectAsState().value.animations
 fun Modifier.paper(): Modifier = composed {
     val p = LocalPalette.current
     val specks = remember { List(220) { Triple(Random.nextFloat(), Random.nextFloat(), Random.nextFloat()) } }
+    val grain = remember { List(34) { Triple(Random.nextFloat(), 0.4f + Random.nextFloat() * 1.2f, Random.nextFloat()) } }
     drawBehind {
         drawRect(p.bg)
+        if (p.dark) {
+            // Vetas de madera: líneas onduladas suaves en tonos dorados y cafés
+            grain.forEach { (y0, w, a) ->
+                val path = androidx.compose.ui.graphics.Path()
+                val y = y0 * size.height
+                path.moveTo(0f, y)
+                var x = 0f
+                while (x <= size.width) { path.lineTo(x, y + sin(x / (60f + a * 90f) + a * 6f) * (6f + a * 10f)); x += 12f }
+                drawPath(path, (if (a > 0.6f) p.gold else p.raised).copy(alpha = 0.10f + a * 0.10f), style = Stroke(width = w * 2f))
+            }
+        }
         specks.forEach { (x, y, a) -> drawCircle(p.muted.copy(alpha = 0.05f + a * 0.06f), radius = 0.6f + a * 1.4f, center = Offset(x * size.width, y * size.height)) }
         drawRect(Brush.radialGradient(listOf(Color.Transparent, p.muted.copy(alpha = if (p.dark) 0.18f else 0.10f)), center = center, radius = size.maxDimension * 0.75f))
     }
@@ -226,3 +239,34 @@ fun Confetti(modifier: Modifier = Modifier, count: Int = 90, durationMs: Int = 2
 
 /* ---------- Muelle para animaciones con rebote ---------- */
 val bouncy = spring<Float>(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+
+/* ---------- Borde dorado (en la noche brilla más) ---------- */
+fun Modifier.goldBorder(shape: androidx.compose.ui.graphics.Shape, width: Dp = 1.5.dp): Modifier = composed {
+    val p = LocalPalette.current
+    val brush = if (p.dark) Brush.linearGradient(listOf(p.gold, p.line, p.gold.copy(alpha = 0.7f), p.line))
+                else Brush.linearGradient(listOf(p.line, p.line))
+    border(width, brush, shape)
+}
+
+/* ---------- Entrada animada: sube y aparece (una sola vez) ---------- */
+fun Modifier.enterAnim(delayMs: Int = 0): Modifier = composed {
+    if (!animationsOn()) return@composed this
+    val a = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(delayMs.toLong()); a.animateTo(1f, tween(520, easing = FastOutSlowInEasing)) }
+    graphicsLayer { alpha = a.value; translationY = (1 - a.value) * 60f; scaleX = 0.96f + 0.04f * a.value; scaleY = scaleX }
+}
+
+/* ---------- Se hunde un poco al tocarlo ---------- */
+fun Modifier.pressScale(interaction: androidx.compose.foundation.interaction.InteractionSource): Modifier = composed {
+    val pressed by interaction.collectIsPressedAsState()
+    val s by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.96f else 1f, bouncy, label = "presionar")
+    graphicsLayer { scaleX = s; scaleY = s }
+}
+
+/* ---------- Late suavemente (para llamar la atención) ---------- */
+fun Modifier.pulse(): Modifier = composed {
+    if (!animationsOn()) return@composed this
+    val t = rememberInfiniteTransition(label = "latido")
+    val s by t.animateFloat(1f, 1.06f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "s")
+    graphicsLayer { scaleX = s; scaleY = s }
+}

@@ -1,5 +1,7 @@
 package com.timecapsule.app.ui.screens
 
+import com.timecapsule.app.ui.components.goldBorder
+import com.timecapsule.app.ui.components.enterAnim
 import android.Manifest
 import android.content.Intent
 import android.graphics.Bitmap
@@ -96,7 +98,7 @@ private val keyboard = KeyboardOptions(capitalization = KeyboardCapitalization.S
 private fun Section(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, content: @Composable () -> Unit) {
     val p = LocalPalette.current
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(p.surface).border(1.dp, p.line, RoundedCornerShape(6.dp))
+        Modifier.fillMaxWidth().enterAnim().clip(RoundedCornerShape(8.dp)).background(p.surface).goldBorder(RoundedCornerShape(8.dp))
             .padding(16.dp).animateContentSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
