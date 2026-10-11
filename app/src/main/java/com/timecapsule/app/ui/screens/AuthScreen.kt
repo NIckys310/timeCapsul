@@ -1,5 +1,6 @@
 package com.timecapsule.app.ui.screens
 
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Box
 import com.timecapsule.app.ui.theme.Typewriter
@@ -83,7 +84,12 @@ fun AuthScreen() {
         verticalArrangement = Arrangement.Center,
     ) {
         Box(contentAlignment = Alignment.BottomEnd) {
-            Image(painterResource(R.drawable.logo), null, Modifier.size(120.dp).floating(amplitude = 4.dp).clip(RoundedCornerShape(6.dp)))
+            // Logo nuevo: el mismo del ícono (fondo madera + sobre con lacre)
+            Box(Modifier.size(120.dp).floating(amplitude = 4.dp).clip(RoundedCornerShape(28.dp))) {
+                Image(painterResource(R.drawable.ic_launcher_background), null, Modifier.fillMaxSize())
+                Image(painterResource(R.drawable.ic_launcher_foreground_vintage), "Logo de Time Capsule",
+                    Modifier.fillMaxSize().graphicsLayer { scaleX = 1.32f; scaleY = 1.32f })
+            }
             WaxSeal(Modifier.offset(x = 14.dp, y = 14.dp), size = 46.dp, glow = true)
         }
         Spacer(Modifier.height(24.dp))
