@@ -1,5 +1,8 @@
 package com.timecapsule.app.ui.screens
 
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.animation.togetherWith
+import com.timecapsule.app.ui.components.pulse
 import com.timecapsule.app.ui.theme.NightSurface
 import com.timecapsule.app.ui.components.paper
 import androidx.compose.ui.graphics.Color
@@ -77,6 +80,7 @@ fun HomeScreen(vm: MainViewModel, onCreate: () -> Unit, onOpen: (String) -> Unit
         floatingActionButton = {
             if (tab == 0) ExtendedFloatingActionButton(
                 onClick = onCreate,
+                modifier = Modifier.pulse(),
                 icon = { Icon(Icons.Filled.Add, null) },
                 text = { Text("Nueva cápsula") },
             )
@@ -91,11 +95,16 @@ fun HomeScreen(vm: MainViewModel, onCreate: () -> Unit, onOpen: (String) -> Unit
         },
     ) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
-            when (tab) {
-                0 -> CapsuleList(vm, onOpen)
-                1 -> TimelineScreen(vm, onOpen)
-                2 -> MapScreen(vm, onOpen)
-                else -> ProfileScreen(vm)
+            androidx.compose.animation.AnimatedContent(tab, transitionSpec = {
+                (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(320)) + androidx.compose.animation.slideInHorizontally { if (targetState > initialState) it / 4 else -it / 4 }) togetherWith
+                    androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(200))
+            }, label = "pestaña") { t ->
+                when (t) {
+                    0 -> CapsuleList(vm, onOpen)
+                    1 -> TimelineScreen(vm, onOpen)
+                    2 -> MapScreen(vm, onOpen)
+                    else -> ProfileScreen(vm)
+                }
             }
         }
     }
@@ -137,7 +146,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.section(
 ) {
     if (list.isEmpty()) return
     item(key = "h_$title") { Text(title, color = Muted, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
-    items(list, key = { it.id }) { c -> CapsuleCard(c, me) { onOpen(c.id) } }
+    itemsIndexed(list, key = { _, c -> c.id }) { i, c -> CapsuleCard(c, me, index = i) { onOpen(c.id) } }
 }
 
 /** Unirse a una cápsula con el código de invitación. */
