@@ -4,7 +4,11 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
+import android.view.WindowManager
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.timecapsule.app.ui.components.LockScreen
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,7 +37,11 @@ import com.timecapsule.app.ui.screens.HomeScreen
 import com.timecapsule.app.ui.theme.TimeCapsuleTheme
 import io.github.jan.supabase.auth.status.SessionStatus
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
+    /** Bloqueo con huella: se pide al abrir y al volver después de 30 s. */
+    private val locked = mutableStateOf(false)
+    private var leftAt = 0L
+
     /** Cápsula a abrir cuando se toca una notificación. */
     private val pendingCapsule = mutableStateOf<String?>(null)
     /** Código de invitación recibido por enlace/QR (timecapsule://invitar/CODIGO). */
@@ -51,6 +59,14 @@ class MainActivity : ComponentActivity() {
         }
 
         AppSettings.load(this)
+        locked.value = AppSettings.look.value.appLock
+        // Ocultar en recientes / bloquear capturas según el ajuste
+        lifecycleScope.launch {
+            AppSettings.look.collect { l ->
+                if (l.hideRecents) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
+        }
         setContent {
             val look by AppSettings.look.collectAsState()
             TimeCapsuleTheme(themeMode = look.theme, highContrast = look.highContrast, textScale = look.textScale) {
@@ -59,6 +75,8 @@ class MainActivity : ComponentActivity() {
                 val nav = rememberNavController()
                 val pending by pendingCapsule
 
+                val isLocked by locked
+                if (isLocked && status is SessionStatus.Authenticated) { LockScreen(onUnlocked = { locked.value = false }); return@TimeCapsuleTheme }
                 when (status) {
                     is SessionStatus.Initializing -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -107,6 +125,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStop() { super.onStop(); leftAt = System.currentTimeMillis() }
+    override fun onStart() {
+        super.onStart()
+        if (AppSettings.look.value.appLock && leftAt > 0 && System.currentTimeMillis() - leftAt > 30_000) locked.value = true
     }
 
     override fun onNewIntent(intent: Intent) {

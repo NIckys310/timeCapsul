@@ -15,6 +15,8 @@ data class Look(
     val vibrateOnOpen: Boolean = true,
     val readAloud: Boolean = false,     // leer la carta en voz alta al abrir
     val animations: Boolean = true,
+    val appLock: Boolean = false,       // pedir huella o PIN al abrir la app
+    val hideRecents: Boolean = false,   // ocultar en apps recientes y bloquear capturas
 )
 
 object AppSettings {
@@ -32,6 +34,8 @@ object AppSettings {
             vibrateOnOpen = s.getBoolean("vibrate", true),
             readAloud = s.getBoolean("readAloud", false),
             animations = s.getBoolean("animations", true),
+            appLock = s.getBoolean("appLock", false),
+            hideRecents = s.getBoolean("hideRecents", false),
         )
     }
 
@@ -41,6 +45,7 @@ object AppSettings {
         p(ctx).edit()
             .putString("theme", n.theme).putBoolean("contrast", n.highContrast).putFloat("textScale", n.textScale)
             .putBoolean("vibrate", n.vibrateOnOpen).putBoolean("readAloud", n.readAloud).putBoolean("animations", n.animations)
+            .putBoolean("appLock", n.appLock).putBoolean("hideRecents", n.hideRecents)
             .apply()
     }
 }
