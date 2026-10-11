@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.GroupAdd
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
@@ -68,6 +70,7 @@ fun HomeScreen(vm: MainViewModel, onCreate: () -> Unit, onOpen: (String) -> Unit
         topBar = {
             TopAppBar(
                 title = { Text(if (tab == 0) "Mis cápsulas" else tabs[tab].label, style = MaterialTheme.typography.headlineSmall) },
+                actions = { if (tab == 0) JoinWithCode(vm, onOpen) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
@@ -135,4 +138,36 @@ private fun androidx.compose.foundation.lazy.LazyListScope.section(
     if (list.isEmpty()) return
     item(key = "h_$title") { Text(title, color = Muted, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
     items(list, key = { it.id }) { c -> CapsuleCard(c, me) { onOpen(c.id) } }
+}
+
+/** Unirse a una cápsula con el código de invitación. */
+@Composable
+private fun JoinWithCode(vm: MainViewModel, onOpen: (String) -> Unit) {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var open by remember { androidx.compose.runtime.mutableStateOf(false) }
+    var code by remember { androidx.compose.runtime.mutableStateOf("") }
+    var err by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    androidx.compose.material3.IconButton(onClick = { open = true }) { Icon(Icons.Filled.GroupAdd, "Unirme con código") }
+    if (open) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { open = false },
+        title = { Text("Unirme con código") },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                Text("Escribe el código que te compartieron.", color = Muted)
+                androidx.compose.material3.OutlinedTextField(code, { code = it.uppercase().take(8); err = null }, singleLine = true,
+                    textStyle = MaterialTheme.typography.headlineSmall.copy(fontFamily = com.timecapsule.app.ui.theme.Typewriter))
+                err?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(enabled = code.length >= 6, onClick = {
+                scope.launch {
+                    runCatching { Repo.acceptInvite(code) }
+                        .onSuccess { id -> open = false; code = ""; vm.refresh(); onOpen(id) }
+                        .onFailure { err = Repo.friendly(it) }
+                }
+            }) { Text("Unirme") }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = { open = false }) { Text("Cancelar") } },
+    )
 }

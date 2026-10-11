@@ -36,6 +36,8 @@ import io.github.jan.supabase.auth.status.SessionStatus
 class MainActivity : ComponentActivity() {
     /** Cápsula a abrir cuando se toca una notificación. */
     private val pendingCapsule = mutableStateOf<String?>(null)
+    /** Código de invitación recibido por enlace/QR (timecapsule://invitar/CODIGO). */
+    private val pendingInvite = mutableStateOf<String?>(null)
 
     private val notifPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -43,6 +45,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingCapsule.value = intent.getStringExtra(Notifier.EXTRA_CAPSULE)
+        pendingInvite.value = inviteCode(intent)
         if (Build.VERSION.SDK_INT >= 33 && !Notifier.canNotify(this)) {
             notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -67,6 +70,15 @@ class MainActivity : ComponentActivity() {
                         }
                         LaunchedEffect(pending) {
                             pending?.let { nav.navigate("capsule/$it"); pendingCapsule.value = null }
+                        }
+                        val invite by pendingInvite
+                        LaunchedEffect(invite) {
+                            invite?.let { code ->
+                                pendingInvite.value = null
+                                runCatching { com.timecapsule.app.data.Repo.acceptInvite(code) }
+                                    .onSuccess { id -> vm.refresh(); nav.navigate("capsule/$id") }
+                                    .onFailure { vm.message.value = com.timecapsule.app.data.Repo.friendly(it) }
+                            }
                         }
                         NavHost(nav, startDestination = "home") {
                             composable("home") {
@@ -100,5 +112,9 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.getStringExtra(Notifier.EXTRA_CAPSULE)?.let { pendingCapsule.value = it }
+        inviteCode(intent)?.let { pendingInvite.value = it }
     }
+
+    private fun inviteCode(i: Intent?): String? =
+        i?.data?.takeIf { it.scheme == "timecapsule" && it.host == "invitar" }?.lastPathSegment?.uppercase()
 }
