@@ -76,7 +76,8 @@ class MainActivity : FragmentActivity() {
                 val pending by pendingCapsule
 
                 val isLocked by locked
-                if (isLocked && status is SessionStatus.Authenticated) { LockScreen(onUnlocked = { locked.value = false }); return@TimeCapsuleTheme }
+                // El bloqueo se pone ENCIMA de la app: lo que estabas haciendo no se borra
+                Box(Modifier.fillMaxSize()) {
                 when (status) {
                     is SessionStatus.Initializing -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -98,7 +99,12 @@ class MainActivity : FragmentActivity() {
                                     .onFailure { vm.message.value = com.timecapsule.app.data.Repo.friendly(it) }
                             }
                         }
-                        NavHost(nav, startDestination = "home") {
+                        NavHost(nav, startDestination = "home",
+                            enterTransition = { androidx.compose.animation.slideInHorizontally(androidx.compose.animation.core.tween(380)) { it / 3 } + androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(380)) },
+                            exitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(220)) + androidx.compose.animation.scaleOut(targetScale = 0.96f) },
+                            popEnterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300)) + androidx.compose.animation.scaleIn(initialScale = 0.96f) },
+                            popExitTransition = { androidx.compose.animation.slideOutHorizontally(androidx.compose.animation.core.tween(320)) { it / 3 } + androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(320)) },
+                        ) {
                             composable("home") {
                                 HomeScreen(vm,
                                     onCreate = { nav.navigate("create") },
@@ -122,6 +128,11 @@ class MainActivity : FragmentActivity() {
                         }
                     }
                     else -> AuthScreen()
+                }
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isLocked && status is SessionStatus.Authenticated,
+                    enter = androidx.compose.animation.fadeIn(), exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.scaleOut(targetScale = 1.1f),
+                ) { LockScreen(onUnlocked = { locked.value = false }) }
                 }
             }
         }
