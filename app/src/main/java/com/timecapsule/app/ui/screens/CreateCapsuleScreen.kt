@@ -87,6 +87,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.timecapsule.app.data.Draft
+import androidx.compose.material.icons.filled.AutoAwesome
+import android.util.Base64
 import com.timecapsule.app.data.LetterTemplates
 import com.timecapsule.app.data.Route
 import com.timecapsule.app.ui.components.VoiceNotePlayer
@@ -169,6 +171,33 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
 
     // Actualización 3: plantilla, notas de voz, canción, preguntas, radio, abrir juntos, colaboradores y rutas
     var template by remember { mutableStateOf<String?>(null) }
+    // IA: títulos sugeridos y ayuda con la carta
+    var aiBusy by remember { mutableStateOf<String?>(null) }
+    var titleIdeas by remember { mutableStateOf<List<String>>(emptyList()) }
+    var letterBefore by remember { mutableStateOf<String?>(null) }
+    fun suggestTitle() {
+        aiBusy = "titulo"; error = null
+        scope.launch {
+            runCatching {
+                val photos = items.filter { it.kind == "photo" }.take(3)
+                val imgs = photos.map { Base64.encodeToString(MediaUtil.compressPhoto(ctx, it.uri, 640), Base64.NO_WRAP) }
+                val (titles, cover) = Repo.aiSuggest(imgs, letter, placeName.ifBlank { null })
+                titleIdeas = titles
+                // La foto elegida como portada pasa al primer lugar
+                photos.getOrNull(cover)?.let { best -> items.remove(best); items.add(0, best) }
+            }.onFailure { error = Repo.friendly(it) }
+            aiBusy = null
+        }
+    }
+    fun helpLetter(tono: String) {
+        aiBusy = "carta"; error = null
+        scope.launch {
+            runCatching { Repo.aiLetter(letter, title, tono) }
+                .onSuccess { letterBefore = letter; letter = it }
+                .onFailure { error = Repo.friendly(it) }
+            aiBusy = null
+        }
+    }
     val voiceNotes = remember { mutableStateListOf<File>() }
     val recorder = remember { VoiceRecorder(ctx) }
     var recording by remember { mutableStateOf(false) }
@@ -283,9 +312,25 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
             OutlinedTextField(title, { title = it }, label = { Text("Título") }, singleLine = true,
                 keyboardOptions = textKeyboard,
                 placeholder = { Text("Cena de aniversario, Grado 2026…") }, modifier = Modifier.fillMaxWidth())
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = ::suggestTitle, enabled = aiBusy == null && (items.any { it.kind == "photo" } || letter.isNotBlank())) {
+                    if (aiBusy == "titulo") CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
+                    Spacer(Modifier.width(6.dp)); Text("Sugerir título y portada")
+                }
+            }
+            if (titleIdeas.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                titleIdeas.forEach { t -> FilterChip(selected = title == t, onClick = { title = t }, label = { Text(t) }) }
+            }
             OutlinedTextField(letter, { letter = it }, label = { Text("Carta para el futuro") },
                 keyboardOptions = textKeyboard,
                 placeholder = { Text("Querido yo del futuro…") }, minLines = 5, modifier = Modifier.fillMaxWidth())
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = { helpLetter("cálido") }, enabled = aiBusy == null) {
+                    if (aiBusy == "carta") CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
+                    Spacer(Modifier.width(6.dp)); Text(if (letter.isBlank()) "Escribe un borrador" else "Mejorar mi carta")
+                }
+                if (letterBefore != null) TextButton(onClick = { letter = letterBefore!!; letterBefore = null }) { Text("Deshacer") }
+            }
             Text("¿Te ayudo a empezar? Elige una plantilla:", color = Muted, style = MaterialTheme.typography.bodySmall)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 itemsIndexed(LetterTemplates.all) { _, (id, pair) ->
