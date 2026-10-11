@@ -217,3 +217,12 @@ Prometo volver para…
         "¿Qué canción te gusta ahora?", "¿Qué le dirías a tu yo de hoy?", "¿Sigues estudiando o trabajando en lo mismo?",
     )
 }
+
+/* ---------- Álbum animado (textos de la IA) ---------- */
+@Serializable
+data class Album(
+    val intro: String = "",
+    val fotos: List<String> = emptyList(),
+    val cierre: String = "",
+    val paths: List<String> = emptyList(),
+)

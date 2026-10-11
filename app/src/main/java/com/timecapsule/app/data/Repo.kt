@@ -257,6 +257,38 @@ object Repo {
         return json.decodeFromString(Timeline.serializer(), text)
     }
 
+    private suspend fun ai(body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject {
+        val res = supabase.functions.invoke(function = "ai-memories", body = body)
+        val obj = json.parseToJsonElement(res.bodyAsText()).jsonObject
+        obj["error"]?.jsonPrimitive?.contentOrNull?.let { error(if (it.contains("ANTHROPIC_API_KEY")) "La IA aún no está activada (falta la clave de Claude en Supabase)." else it) }
+        return obj
+    }
+
+    /** Sugiere 3 títulos y cuál foto usar de portada (fotos en JPEG pequeño, base64). */
+    suspend fun aiSuggest(images: List<String>, letter: String, place: String?): Pair<List<String>, Int> {
+        val o = ai(buildJsonObject {
+            put("action", "suggest"); put("letter", letter); place?.let { put("place", it) }
+            put("images", kotlinx.serialization.json.JsonArray(images.map { kotlinx.serialization.json.JsonPrimitive(it) }))
+        })
+        val titles = o["titulos"]?.let { json.decodeFromJsonElement(kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.serializer<String>()), it) } ?: emptyList()
+        return titles to (o["portada"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0)
+    }
+
+    /** Mejora o completa la carta (la persona decide si la usa). */
+    suspend fun aiLetter(letter: String, title: String, tono: String): String =
+        ai(buildJsonObject { put("action", "letter"); put("letter", letter); put("title", title); put("tono", tono) })["carta"]?.jsonPrimitive?.contentOrNull
+            ?: error("La IA no devolvió la carta")
+
+    /** Recuerdo de "hace un año" (o null si no hay). */
+    suspend fun aiYearAgo(): Triple<String, String, String>? {
+        val o = ai(buildJsonObject { put("action", "year_ago") })
+        val msg = o["mensaje"]?.jsonPrimitive?.contentOrNull ?: return null
+        return Triple(msg, o["capsule_id"]?.jsonPrimitive?.contentOrNull.orEmpty(), o["titulo"]?.jsonPrimitive?.contentOrNull.orEmpty())
+    }
+
+    /** Textos del álbum animado de una cápsula abierta. */
+    suspend fun aiAlbum(capsuleId: String): Album = json.decodeFromJsonElement(Album.serializer(), ai(buildJsonObject { put("action", "album"); put("capsule_id", capsuleId) }))
+
     fun encodeTimeline(t: Timeline): String = json.encodeToString(Timeline.serializer(), t)
     fun decodeTimeline(s: String): Timeline? = runCatching { json.decodeFromString(Timeline.serializer(), s) }.getOrNull()
 
