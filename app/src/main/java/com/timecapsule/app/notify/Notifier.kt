@@ -19,6 +19,8 @@ object Notifier {
     const val CH_UNLOCK = "unlock"
     const val CH_PLACE = "place"
     const val CH_SHARE = "share"
+    const val CH_ACTIVITY = "activity"
+    const val CH_REMINDER = "reminder"
     const val EXTRA_CAPSULE = "capsuleId"
 
     fun createChannels(ctx: Context) {
@@ -26,6 +28,8 @@ object Notifier {
         nm.createNotificationChannel(NotificationChannel(CH_UNLOCK, "Cápsulas que se abren", NotificationManager.IMPORTANCE_HIGH))
         nm.createNotificationChannel(NotificationChannel(CH_PLACE, "Recuerdos de lugares", NotificationManager.IMPORTANCE_HIGH))
         nm.createNotificationChannel(NotificationChannel(CH_SHARE, "Cápsulas compartidas", NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CH_ACTIVITY, "Reacciones y comentarios", NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CH_REMINDER, "Cuenta regresiva", NotificationManager.IMPORTANCE_DEFAULT))
     }
 
     fun canNotify(ctx: Context) = Build.VERSION.SDK_INT < 33 ||
@@ -41,7 +45,7 @@ object Notifier {
         val pi = PendingIntent.getActivity(ctx, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(ctx, channel)
             .setSmallIcon(R.drawable.ic_notification)
-            .setColor(0xFFFF8A7A.toInt())
+            .setColor(0xFFA63D2F.toInt())
             .setContentTitle(title)
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))

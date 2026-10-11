@@ -41,26 +41,52 @@ class UnlockWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                 .setInputData(workDataOf("id" to c.id, "title" to c.title, "place" to (if (c.requirePlace) (c.placeName ?: "su lugar") else null)))
                 .build()
             WorkManager.getInstance(ctx).enqueueUniqueWork("unlock_${c.id}", ExistingWorkPolicy.REPLACE, req)
+            // Cuenta regresiva: 1 semana, 1 día y 1 hora antes
+            listOf(Duration.ofDays(7) to "1 semana", Duration.ofDays(1) to "1 día", Duration.ofHours(1) to "1 hora").forEach { (before, label) ->
+                val wait = delay.minus(before)
+                if (wait.isNegative) return@forEach
+                val r = OneTimeWorkRequestBuilder<ReminderWorker>()
+                    .setInitialDelay(wait.toMillis(), TimeUnit.MILLISECONDS)
+                    .setInputData(workDataOf("id" to c.id, "title" to c.title, "label" to label))
+                    .build()
+                WorkManager.getInstance(ctx).enqueueUniqueWork("remind_${label}_${c.id}", ExistingWorkPolicy.REPLACE, r)
+            }
         }
-        fun cancel(ctx: Context, id: String) = WorkManager.getInstance(ctx).cancelUniqueWork("unlock_$id")
+        fun cancel(ctx: Context, id: String) {
+            val wm = WorkManager.getInstance(ctx)
+            wm.cancelUniqueWork("unlock_$id")
+            listOf("1 semana", "1 día", "1 hora").forEach { wm.cancelUniqueWork("remind_${it}_$id") }
+        }
     }
 }
 
-/** Cada 6 horas revisa la nube: cápsulas nuevas compartidas contigo, fechas y lugares. */
+/** Aviso de cuenta regresiva ("falta 1 día para abrir…"). */
+class ReminderWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
+    override suspend fun doWork(): Result {
+        val id = inputData.getString("id") ?: return Result.success()
+        val title = inputData.getString("title").orEmpty()
+        val label = inputData.getString("label").orEmpty()
+        Notifier.show(applicationContext, ("r$label$id").hashCode(), Notifier.CH_REMINDER, "⏳ Falta $label", "Tu cápsula “$title” se abrirá pronto.", id)
+        return Result.success()
+    }
+}
+
+/** Cada hora revisa la nube: cápsulas nuevas compartidas contigo, fechas y lugares. */
 class SyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result = runCatching {
         Repo.ready()
         if (Repo.userId() == null) return Result.success()
         Sync.apply(applicationContext, Repo.feed(), notifyNew = true)
+        Sync.activity(applicationContext)
         Result.success()
     }.getOrElse { Result.retry() }
 
     companion object {
         fun schedulePeriodic(ctx: Context) {
-            val req = PeriodicWorkRequestBuilder<SyncWorker>(6, TimeUnit.HOURS)
+            val req = PeriodicWorkRequestBuilder<SyncWorker>(1, TimeUnit.HOURS)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .build()
-            WorkManager.getInstance(ctx).enqueueUniquePeriodicWork("sync", ExistingPeriodicWorkPolicy.KEEP, req)
+            WorkManager.getInstance(ctx).enqueueUniquePeriodicWork("sync", ExistingPeriodicWorkPolicy.UPDATE, req)
         }
     }
 }
@@ -80,5 +106,17 @@ object Sync {
         Prefs.setSynced(ctx)
         list.filter { !it.dateReady }.forEach { UnlockWorker.schedule(ctx, it) }
         GeofenceManager.update(ctx, list)
+    }
+
+    /** Avisa cuando alguien reacciona o comenta en tus cápsulas. */
+    suspend fun activity(ctx: Context) {
+        val p = ctx.getSharedPreferences("timecapsule", Context.MODE_PRIVATE)
+        val since = p.getString("activitySince", null) ?: Instant.now().toString().also { p.edit().putString("activitySince", it).apply(); return }
+        val list = runCatching { Repo.recentActivity(since) }.getOrDefault(emptyList())
+        list.take(5).forEach { a ->
+            val text = if (a.kind == "comment") "${a.who ?: "Alguien"} comentó: ${a.body}" else "${a.who ?: "Alguien"} reaccionó ${a.body}"
+            Notifier.show(ctx, (a.kind + a.capsuleId + a.at).hashCode(), Notifier.CH_ACTIVITY, "“${a.title}”", text, a.capsuleId)
+        }
+        p.edit().putString("activitySince", Instant.now().toString()).apply()
     }
 }
