@@ -87,6 +87,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.timecapsule.app.data.Draft
+import com.timecapsule.app.data.DraftStore
+import com.timecapsule.app.data.SavedDraft
+import com.timecapsule.app.data.SavedItem
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.collectLatest
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import android.content.ClipboardManager
 import androidx.compose.material.icons.filled.AutoAwesome
 import android.util.Base64
 import com.timecapsule.app.data.LetterTemplates
@@ -213,6 +222,49 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
     var routeId by remember { mutableStateOf<String?>(null) }
     var newRoute by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { routes = runCatching { Repo.routes() }.getOrDefault(emptyList()) }
+
+    // ---------- Borrador automático ----------
+    var draftReady by remember { mutableStateOf(false) }
+    var restored by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        DraftStore.load(ctx)?.let { d ->
+            title = d.title; letter = d.letter; template = d.template
+            items.clear(); items.addAll(d.items.map { PickedItem(Uri.parse(it.uri), it.kind) })
+            voiceNotes.clear(); voiceNotes.addAll(d.voiceNotes.map { File(it) }.filter { it.exists() })
+            useDate = d.useDate; unlockAt = d.unlockAtEpoch?.let { Instant.ofEpochMilli(it) } ?: unlockAt
+            usePlace = d.usePlace; requirePlace = d.requirePlace; placeName = d.placeName
+            emails = d.emails; songTitle = d.songTitle; songUrl = d.songUrl
+            questions.clear(); questions.addAll(d.questions)
+            radius = d.radius; openTogether = d.openTogether; contribute = d.contribute; routeId = d.routeId
+            restored = true
+        }
+        draftReady = true
+    }
+    LaunchedEffect(Unit) {
+        snapshotFlow {
+            SavedDraft(
+                title = title, letter = letter, items = items.map { SavedItem(it.uri.toString(), it.kind) },
+                voiceNotes = voiceNotes.map { it.absolutePath }, unlockAtEpoch = unlockAt?.toEpochMilli(), useDate = useDate,
+                usePlace = usePlace, requirePlace = requirePlace, placeName = placeName, emails = emails, template = template,
+                songTitle = songTitle, songUrl = songUrl, questions = questions.toList(), radius = radius,
+                openTogether = openTogether, contribute = contribute, routeId = routeId,
+            )
+        }.collectLatest { d -> if (draftReady) { kotlinx.coroutines.delay(300); DraftStore.save(ctx, d) } }
+    }
+    // Al volver de YouTube/Spotify: si copiaste el enlace de la canción, se pega solo
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val obs = LifecycleEventObserver { _, e ->
+            if (e == Lifecycle.Event.ON_RESUME && songUrl.isBlank()) {
+                val cb = ctx.getSystemService(ClipboardManager::class.java)
+                val clip = runCatching { cb?.primaryClip?.getItemAt(0)?.text?.toString() }.getOrNull().orEmpty()
+                val link = Regex("https?://\\S*(youtube\\.com|youtu\\.be|spotify\\.com)\\S*").find(clip)?.value
+                if (link != null) songUrl = link
+            }
+        }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs) }
+    }
     LaunchedEffect(recording) { while (recording) { recMs = recorder.elapsedMs; if (recMs >= 180_000) { recorder.stop()?.let { voiceNotes += it }; recording = false }; delay(200) } }
     DisposableEffect(Unit) { onDispose { recorder.stop() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
@@ -224,6 +276,7 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
         var skipped = 0
         uris.forEach { u ->
             if (items.any { it.uri == u }) return@forEach
+            runCatching { ctx.contentResolver.takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
             val kind = MediaUtil.kindOf(ctx, u)
             val photos = items.count { it.kind == "photo" }; val videos = items.count { it.kind == "video" }
             if ((kind == "photo" && photos >= 20) || (kind == "video" && videos >= 1)) skipped++ else items += PickedItem(u, kind)
@@ -289,7 +342,7 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
                     openTogether = openTogether && emails.contains('@'), shareContribute = contribute,
                     routeId = routeId, routeOrder = routeId?.let { rid -> runCatching { Repo.nextRouteOrder(rid) }.getOrDefault(1) },
                 )) { text, p -> progressText = text; progress = p }
-            }.onSuccess { onCreated(it) }
+            }.onSuccess { DraftStore.clear(ctx); onCreated(it) }
              .onFailure { error = Repo.friendly(it); saving = false }
         }
     }
@@ -309,6 +362,16 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
             Modifier.padding(pad).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            if (restored) Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("✓ Recuperamos tu borrador", Modifier.weight(1f), color = Gold)
+                TextButton(onClick = {
+                    DraftStore.clear(ctx); restored = false
+                    title = ""; letter = ""; items.clear(); voiceNotes.clear(); songTitle = ""; songUrl = ""; questions.clear(); template = null; emails = ""
+                }) { Text("Empezar de nuevo") }
+            }
             OutlinedTextField(title, { title = it }, label = { Text("Título") }, singleLine = true,
                 keyboardOptions = textKeyboard,
                 placeholder = { Text("Cena de aniversario, Grado 2026…") }, modifier = Modifier.fillMaxWidth())
@@ -367,6 +430,7 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
             OutlinedTextField(songUrl, { songUrl = it }, label = { Text("Enlace de la canción (opcional)") }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 placeholder = { Text("Pega aquí el enlace de YouTube o Spotify") }, modifier = Modifier.fillMaxWidth())
+            Text("Tranquila: todo lo que llevas se guarda solo. En YouTube o Spotify toca Compartir → Copiar enlace y al volver se pega aquí.", color = Muted, style = MaterialTheme.typography.bodySmall)
 
             // ---------- Preguntas para el futuro ----------
             Text("Preguntas para tu yo del futuro", style = MaterialTheme.typography.titleMedium)
