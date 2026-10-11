@@ -176,6 +176,7 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
             if (!c.isOpen) {
                 LockedPanel(c, onOpened = { justOpened = true; reload++; onChanged() }, onTimeUp = { justOpened = true; reload++; onChanged() })
                 OpenTogetherPanel(c, onOpened = { justOpened = true; reload++; onChanged() })
+                HotColdFinder(c)
                 ContributePanel(c, onAdded = { reload++ })
             } else {
                 OpenContent(c, media.filter { it.kind != "audio" }, onView = { viewer = it }, onSummary = { reload++ })

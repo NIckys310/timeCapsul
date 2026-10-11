@@ -366,3 +366,50 @@ fun qrBitmap(text: String, size: Int): Bitmap {
     for (x in 0 until size) for (y in 0 until size) bmp.setPixel(x, y, if (m[x, y]) 0xFF2E241C.toInt() else 0xFFFFFFFF.toInt())
     return bmp
 }
+
+/* ---------------- Caliente o frío (búsqueda del tesoro) ---------------- */
+@Composable
+fun HotColdFinder(c: Capsule) {
+    if (c.isOpen || !c.hasPlace) return
+    val ctx = LocalContext.current
+    val p = LocalPalette.current
+    var searching by remember { mutableStateOf(false) }
+    var dist by remember { mutableStateOf<Float?>(null) }
+    var prev by remember { mutableStateOf<Float?>(null) }
+    val perm = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { res ->
+        searching = res.values.any { it }
+    }
+    LaunchedEffect(searching) {
+        while (searching) {
+            val loc = com.timecapsule.app.util.LocationUtil.current(ctx)
+            if (loc != null) { prev = dist; dist = com.timecapsule.app.util.LocationUtil.distanceMeters(loc.latitude, loc.longitude, c.lat!!, c.lng!!) }
+            delay(4000)
+        }
+    }
+    Section("Búsqueda del tesoro", Icons.Filled.Route) {
+        if (!searching) {
+            Text("¿No recuerdas exactamente dónde está? Te guiamos con “caliente o frío”.", color = p.muted)
+            OutlinedButton(onClick = {
+                if (com.timecapsule.app.util.LocationUtil.hasFine(ctx)) searching = true
+                else perm.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            }) { Text("Empezar a buscar") }
+        } else {
+            val d = dist
+            val (label, color) = when {
+                d == null -> "Buscando tu ubicación…" to p.muted
+                d <= c.radiusM -> "🎉 ¡Llegaste! Ya puedes intentar abrirla" to p.olive
+                d < 200 -> "🔥 ¡Muy caliente!" to p.wax
+                d < 1000 -> "♨️ Caliente" to p.gold
+                d < 5000 -> "🌤 Tibio" to p.gold
+                else -> "❄️ Frío" to androidx.compose.ui.graphics.Color(0xFF6FA8C9)
+            }
+            Text(label, style = MaterialTheme.typography.headlineSmall, color = color)
+            if (d != null) {
+                val trend = prev?.let { if (d < it - 5) "Vas por buen camino ↓" else if (d > it + 5) "Te estás alejando ↑" else "Sigue moviéndote" } ?: ""
+                Text("${if (d >= 1000) "%.1f km".format(d / 1000) else "${d.toInt()} m"} · $trend", fontFamily = Typewriter, color = p.muted)
+                LinearProgressIndicator(progress = { (1f - (d / 5000f)).coerceIn(0.03f, 1f) }, modifier = Modifier.fillMaxWidth(), color = color)
+            }
+            TextButton(onClick = { searching = false }) { Text("Detener") }
+        }
+    }
+}
