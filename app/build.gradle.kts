@@ -63,6 +63,12 @@ dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
 
+    // Códigos QR para invitar (solo genera la imagen; leerlo lo hace la cámara del celular)
+    implementation("com.google.zxing:core:3.5.3")
+
+    // Bloqueo con huella o PIN del celular
+    implementation("androidx.biometric:biometric:1.1.0")
+
     // Nube: Supabase (cuentas, base de datos, archivos, IA)
     implementation(platform("io.github.jan-tennert.supabase:bom:3.0.3"))
     implementation("io.github.jan-tennert.supabase:auth-kt")
