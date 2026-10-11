@@ -46,6 +46,8 @@ class MainActivity : FragmentActivity() {
     private val pendingCapsule = mutableStateOf<String?>(null)
     /** Código de invitación recibido por enlace/QR (timecapsule://invitar/CODIGO). */
     private val pendingInvite = mutableStateOf<String?>(null)
+    /** Abrir directo "Nueva cápsula" (timecapsule://nueva, lo usa Gestores). */
+    private val pendingCreate = mutableStateOf(false)
 
     private val notifPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -54,6 +56,7 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         pendingCapsule.value = intent.getStringExtra(Notifier.EXTRA_CAPSULE)
         pendingInvite.value = inviteCode(intent)
+        pendingCreate.value = wantsCreate(intent)
         if (Build.VERSION.SDK_INT >= 33 && !Notifier.canNotify(this)) {
             notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -89,6 +92,10 @@ class MainActivity : FragmentActivity() {
                         }
                         LaunchedEffect(pending) {
                             pending?.let { nav.navigate("capsule/$it"); pendingCapsule.value = null }
+                        }
+                        val create by pendingCreate
+                        LaunchedEffect(create) {
+                            if (create) { pendingCreate.value = false; nav.navigate("create") }
                         }
                         val invite by pendingInvite
                         LaunchedEffect(invite) {
@@ -148,7 +155,10 @@ class MainActivity : FragmentActivity() {
         super.onNewIntent(intent)
         intent.getStringExtra(Notifier.EXTRA_CAPSULE)?.let { pendingCapsule.value = it }
         inviteCode(intent)?.let { pendingInvite.value = it }
+        if (wantsCreate(intent)) pendingCreate.value = true
     }
+
+    private fun wantsCreate(i: Intent?) = i?.data?.let { it.scheme == "timecapsule" && it.host == "nueva" } == true
 
     private fun inviteCode(i: Intent?): String? =
         i?.data?.takeIf { it.scheme == "timecapsule" && it.host == "invitar" }?.lastPathSegment?.uppercase()

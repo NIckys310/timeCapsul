@@ -44,6 +44,12 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="timecapsule" android:host="invitar" />
             </intent-filter>
+            <!-- Cápsula rápida desde un gesto de Gestores: timecapsule://nueva -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="timecapsule" android:host="nueva" />
+            </intent-filter>
         </activity>
 
         <!-- Avisa cuando llegas a un lugar donde guardaste recuerdos -->
