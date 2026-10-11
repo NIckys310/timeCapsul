@@ -47,11 +47,12 @@ private val DayPalette = Palette(
     gold = Color(0xFFB8893A), olive = Color(0xFF5F7A45), letter = Color(0xFFFFFBF2), letterInk = Color(0xFF2E241C),
     line = Color(0xFFDCCBAA), dark = false,
 )
+/* Noche: madera de nogal cálida, tinta crema y bordes dorados */
 private val NightPalette = Palette(
-    bg = Color(0xFF1E1914), surface = Color(0xFF29221B), raised = Color(0xFF342A21),
-    ink = Color(0xFFF1E6D2), muted = Color(0xFFB4A38B), wax = Color(0xFFD0614C), waxDark = Color(0xFF9E3F30),
-    gold = Color(0xFFE2B865), olive = Color(0xFF9DB57A), letter = Color(0xFFF4EAD6), letterInk = Color(0xFF2E241C),
-    line = Color(0xFF4A3D30), dark = true,
+    bg = Color(0xFF2E1E14), surface = Color(0xFF3D2918), raised = Color(0xFF4E351F),
+    ink = Color(0xFFF7E8CC), muted = Color(0xFFD2B48A), wax = Color(0xFFE47A52), waxDark = Color(0xFFB8552F),
+    gold = Color(0xFFF2C14E), olive = Color(0xFFB5CC72), letter = Color(0xFFF8ECD4), letterInk = Color(0xFF2E241C),
+    line = Color(0xFFA67C3D), dark = true,
 )
 private fun Palette.highContrast() = copy(
     ink = if (dark) Color.White else Color.Black,
