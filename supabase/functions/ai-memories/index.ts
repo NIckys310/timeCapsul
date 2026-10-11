@@ -2,6 +2,10 @@
 //  TIME CAPSULE · Función de IA (Supabase Edge Function "ai-memories")
 //  - action "summary":  resume una cápsula abierta mirando sus fotos
 //  - action "timeline": crea capítulos de vida y notas por lugar
+//  - action "suggest":  sugiere títulos y la mejor portada (fotos aún sin subir)
+//  - action "letter":   ayuda a escribir o mejorar la carta
+//  - action "year_ago": recuerdo de "hace un año"
+//  - action "album":    textos para el álbum animado de una cápsula abierta
 //  Necesita el secreto ANTHROPIC_API_KEY (Edge Functions → Secrets).
 // =====================================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -44,7 +48,8 @@ Deno.serve(async (req) => {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return json({ error: "Inicia sesión de nuevo" }, 401);
 
-    const { action, capsule_id } = await req.json();
+    const body = await req.json();
+    const { action, capsule_id } = body;
 
     // ---------------- Resumen de una cápsula ----------------
     if (action === "summary") {
@@ -110,6 +115,58 @@ Cápsulas: ${JSON.stringify(items)}`,
         3000,
       ));
       return json(out);
+    }
+
+
+    // ---------------- Sugerir título y portada al crear ----------------
+    if (action === "suggest") {
+      const imgs: string[] = (body.images ?? []).slice(0, 3);
+      const content: unknown[] = imgs.map((data) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } }));
+      content.push({ type: "text", text: `Ayudas a crear cápsulas del tiempo. Con ${imgs.length} fotos (numeradas desde 0 en el orden adjunto)${body.place ? `, tomadas en ${body.place}` : ""} y esta carta: """${String(body.letter ?? "").slice(0, 1500)}"""
+Propón 3 títulos cortos (máx. 6 palabras), cálidos y en español, y elige la foto más bonita para portada.
+Responde SOLO JSON: {"titulos":["","",""],"portada":0}` });
+      return json(extractJson(await askClaude(content, 400)));
+    }
+
+    // ---------------- Ayuda para escribir la carta ----------------
+    if (action === "letter") {
+      const tono = String(body.tono ?? "cálido");
+      const out = await askClaude(`Ayudas a escribir cartas para cápsulas del tiempo, en español de Colombia.
+Mejora y completa esta carta con un tono ${tono}. Conserva TODO lo que la persona escribió (nombres, hechos y su forma de hablar); solo ordena, corrige y agrega 1 o 2 frases que lo hagan más emotivo. No inventes hechos.
+Si la carta está casi vacía, escribe un borrador corto para que la persona lo complete con [espacios entre corchetes].
+Devuelve SOLO la carta, sin explicaciones.
+Carta: """${String(body.letter ?? "").slice(0, 4000)}"""
+Título de la cápsula: ${String(body.title ?? "")}`, 1200);
+      return json({ carta: out.trim() });
+    }
+
+    // ---------------- Recuerdo de hace un año ----------------
+    if (action === "year_ago") {
+      const from = new Date(Date.now() - 380 * 864e5).toISOString();
+      const to = new Date(Date.now() - 350 * 864e5).toISOString();
+      const { data: caps } = await sb.from("capsules_feed").select("id,title,letter,ai_summary,place_name,created_at,is_open")
+        .gte("created_at", from).lte("created_at", to).eq("is_open", true).limit(3);
+      if (!caps?.length) return json({ mensaje: null });
+      const c = caps[0];
+      const msg = await askClaude(`Escribe en español una notificación breve (máx. 2 frases, segunda persona, cálida) para recordar que hace un año la persona guardó la cápsula "${c.title}"${c.place_name ? ` en ${c.place_name}` : ""}. Contexto: ${(c.ai_summary || (c.letter ?? "")).slice(0, 600)}. Sin comillas ni emojis al inicio.`, 200);
+      return json({ mensaje: msg.trim(), capsule_id: c.id, titulo: c.title });
+    }
+
+    // ---------------- Textos del álbum animado ----------------
+    if (action === "album") {
+      const { data: c } = await sb.from("capsules_feed").select("*").eq("id", capsule_id).maybeSingle();
+      if (!c?.is_open) return json({ error: "La cápsula todavía está cerrada" }, 403);
+      const { data: media } = await sb.from("capsule_media").select("path, kind").eq("capsule_id", capsule_id).eq("kind", "photo").order("created_at").limit(8);
+      const content: unknown[] = [];
+      for (const m of media ?? []) {
+        const { data: blob } = await sb.storage.from("media").download(m.path);
+        if (blob) content.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: encodeBase64(new Uint8Array(await blob.arrayBuffer())) } });
+      }
+      content.push({ type: "text", text: `Vas a narrar un álbum animado de la cápsula "${c.title}" (${c.place_name ?? "sin lugar"}). Hay ${content.length} fotos en orden.
+Escribe en español, cálido y concreto, sin inventar nombres:
+Responde SOLO JSON: {"intro":"1 frase de apertura","fotos":["1 frase corta por foto, en el mismo orden"],"cierre":"1 frase final"}` });
+      const out = extractJson(await askClaude(content, 1200));
+      return json({ ...out, paths: (media ?? []).map((m) => m.path) });
     }
 
     return json({ error: "Acción no válida" }, 400);
