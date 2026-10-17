@@ -29,6 +29,8 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+    // Pruebas automáticas en la computadora (sin celular): las clases de Android devuelven valores vacíos
+    testOptions { unitTests.isReturnDefaultValues = true }
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1,INDEX.LIST,DEPENDENCIES}" }
     }
@@ -77,4 +79,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:functions-kt")
     implementation("io.ktor:ktor-client-okhttp:3.0.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    // Pruebas automáticas
+    testImplementation("junit:junit:4.13.2")
 }
