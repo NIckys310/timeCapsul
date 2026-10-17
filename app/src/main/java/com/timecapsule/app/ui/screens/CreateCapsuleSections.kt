@@ -162,3 +162,24 @@ internal fun BorradorRecuperado(onEmpezarDeNuevo: () -> Unit) {
         TextButton(onClick = onEmpezarDeNuevo) { Text("Empezar de nuevo") }
     }
 }
+
+/* ---------------- Título (con ideas de la IA) ---------------- */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun SeccionTitulo(
+    titulo: String, onTitulo: (String) -> Unit,
+    ideas: List<String>, pensando: Boolean, puedeSugerir: Boolean, iaOcupada: Boolean, onSugerir: () -> Unit,
+) {
+    OutlinedTextField(titulo, onTitulo, label = { Text("Título") }, singleLine = true,
+        keyboardOptions = tecladoTexto,
+        placeholder = { Text("Cena de aniversario, Grado 2026…") }, modifier = Modifier.fillMaxWidth())
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedButton(onClick = onSugerir, enabled = !iaOcupada && puedeSugerir) {
+            if (pensando) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
+            Spacer(Modifier.width(6.dp)); Text("Sugerir título y portada")
+        }
+    }
+    if (ideas.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ideas.forEach { t -> FilterChip(selected = titulo == t, onClick = { onTitulo(t) }, label = { Text(t) }) }
+    }
+}
