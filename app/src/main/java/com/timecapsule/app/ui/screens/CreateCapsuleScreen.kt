@@ -117,6 +117,8 @@ import android.net.Uri as AUri
 import kotlinx.coroutines.delay
 import com.timecapsule.app.data.PickedItem
 import com.timecapsule.app.data.Repo
+import com.timecapsule.app.data.ReglasCapsula
+import com.timecapsule.app.data.FormularioCapsula
 import com.timecapsule.app.ui.theme.Cream
 import com.timecapsule.app.ui.theme.Gold
 import com.timecapsule.app.ui.theme.Muted
@@ -136,9 +138,11 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
-/** Teclado con mayúscula al iniciar frases. Acepta tildes, ñ, ü y cualquier carácter. */
-private val textKeyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, keyboardType = KeyboardType.Text)
-
+/**
+ * NUEVA CÁPSULA
+ * Esta pantalla guarda lo que vas llenando (con borrador automático) y acomoda las
+ * secciones de CreateCapsuleSections.kt. Las reglas están en data/NuevaCapsula.kt.
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
@@ -214,13 +218,11 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
     var songTitle by remember { mutableStateOf("") }
     var songUrl by remember { mutableStateOf("") }
     val questions = remember { mutableStateListOf<String>() }
-    var newQuestion by remember { mutableStateOf("") }
     var radius by remember { mutableStateOf(150) }
     var openTogether by remember { mutableStateOf(false) }
     var contribute by remember { mutableStateOf(false) }
     var routes by remember { mutableStateOf<List<Route>>(emptyList()) }
     var routeId by remember { mutableStateOf<String?>(null) }
-    var newRoute by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { routes = runCatching { Repo.routes() }.getOrDefault(emptyList()) }
 
     // ---------- Borrador automático ----------
@@ -258,14 +260,13 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
             if (e == Lifecycle.Event.ON_RESUME && songUrl.isBlank()) {
                 val cb = ctx.getSystemService(ClipboardManager::class.java)
                 val clip = runCatching { cb?.primaryClip?.getItemAt(0)?.text?.toString() }.getOrNull().orEmpty()
-                val link = Regex("https?://\\S*(youtube\\.com|youtu\\.be|spotify\\.com)\\S*").find(clip)?.value
-                if (link != null) songUrl = link
+                ReglasCapsula.enlaceDeCancion(clip)?.let { songUrl = it }
             }
         }
         lifecycle.addObserver(obs)
         onDispose { lifecycle.removeObserver(obs) }
     }
-    LaunchedEffect(recording) { while (recording) { recMs = recorder.elapsedMs; if (recMs >= 180_000) { recorder.stop()?.let { voiceNotes += it }; recording = false }; delay(200) } }
+    LaunchedEffect(recording) { while (recording) { recMs = recorder.elapsedMs; if (recMs >= ReglasCapsula.NOTA_DE_VOZ_MAX_MS) { recorder.stop()?.let { voiceNotes += it }; recording = false }; delay(200) } }
     DisposableEffect(Unit) { onDispose { recorder.stop() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         if (ok) runCatching { recorder.start(); recording = true }.onFailure { error = "No se pudo usar el micrófono." }
@@ -279,12 +280,15 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
             runCatching { ctx.contentResolver.takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
             val kind = MediaUtil.kindOf(ctx, u)
             val photos = items.count { it.kind == "photo" }; val videos = items.count { it.kind == "video" }
-            if ((kind == "photo" && photos >= 20) || (kind == "video" && videos >= 1)) skipped++ else items += PickedItem(u, kind)
+            if (ReglasCapsula.cabe(kind, photos, videos)) items += PickedItem(u, kind) else skipped++
         }
-        if (skipped > 0) error = "Máximo 20 fotos y 1 video por cápsula. Se omitieron $skipped."
+        if (skipped > 0) error = "Máximo ${ReglasCapsula.MAX_FOTOS} fotos y ${ReglasCapsula.MAX_VIDEOS} video por cápsula. Se omitieron $skipped."
     }
     val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        if (ok) cameraUri?.let { if (items.count { i -> i.kind == "photo" } < 20) items += PickedItem(it, "photo") else error = "Máximo 20 fotos por cápsula." }
+        if (ok) cameraUri?.let {
+            if (ReglasCapsula.cabe("photo", items.count { i -> i.kind == "photo" }, 0)) items += PickedItem(it, "photo")
+            else error = "Máximo ${ReglasCapsula.MAX_FOTOS} fotos por cápsula."
+        }
     }
 
     /** Toma el GPS real y busca la dirección y los sitios con nombre alrededor. */
@@ -299,8 +303,7 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
                 address = Places.address(ctx, loc.latitude, loc.longitude)
                 nearby = Places.nearby(loc.latitude, loc.longitude)
                 // Si estás prácticamente dentro de un lugar con nombre, se elige solo
-                val closest = nearby.firstOrNull { it.distance <= 35 }
-                if (placeName.isBlank()) placeName = closest?.name ?: address?.substringBefore(",").orEmpty()
+                if (placeName.isBlank()) placeName = ReglasCapsula.lugarSugerido(nearby, address)
             }
             locating = false
         }
@@ -316,15 +319,12 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
 
     fun save() {
         error = null
-        when {
-            title.isBlank() -> { error = "Ponle un título a tu cápsula."; return }
-            letter.isBlank() && items.isEmpty() -> { error = "Escribe una carta o agrega fotos o videos."; return }
-            !useDate && !(usePlace && requirePlace) -> { error = "Elige una fecha o activa “Solo se abre en este lugar”."; return }
-            usePlace && lat == null -> { error = "Espera a que se registre tu ubicación o apaga “Guardar el lugar”."; return }
-            useDate && unlockAt?.isBefore(Instant.now()) == true -> { error = "La fecha de apertura debe ser en el futuro."; return }
-            useKey && key.trim().length < 4 -> { error = "La clave debe tener al menos 4 caracteres."; return }
-            useKey && key != key2 -> { error = "Las dos claves no coinciden."; return }
-        }
+        error = ReglasCapsula.validar(FormularioCapsula(
+            titulo = title, carta = letter, medios = items.size, usarFecha = useDate, abreEl = unlockAt,
+            usarLugar = usePlace, soloEnElLugar = requirePlace, tieneUbicacion = lat != null,
+            usarClave = useKey, clave = key, claveRepetida = key2,
+        ))
+        if (error != null) return
         saving = true
         scope.launch {
             runCatching {
@@ -334,12 +334,12 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
                     placeName = if (usePlace) placeName.ifBlank { address } else null,
                     lat = if (usePlace) lat else null, lng = if (usePlace) lng else null,
                     requirePlace = usePlace && requirePlace,
-                    shareEmails = emails.split(',', ';', ' ', '\n').map { it.trim() }.filter { it.contains('@') },
+                    shareEmails = ReglasCapsula.correos(emails),
                     key = if (useKey) key else null,
                     voiceNotes = voiceNotes.toList(),
                     songUrl = songUrl, songTitle = songTitle, template = template,
                     questions = questions.toList(), radiusM = radius,
-                    openTogether = openTogether && emails.contains('@'), shareContribute = contribute,
+                    openTogether = openTogether && ReglasCapsula.correos(emails).isNotEmpty(), shareContribute = contribute,
                     routeId = routeId, routeOrder = routeId?.let { rid -> runCatching { Repo.nextRouteOrder(rid) }.getOrDefault(1) },
                 )) { text, p -> progressText = text; progress = p }
             }.onSuccess { DraftStore.clear(ctx); onCreated(it) }
@@ -362,235 +362,60 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
             Modifier.padding(pad).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            if (restored) Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("✓ Recuperamos tu borrador", Modifier.weight(1f), color = Gold)
-                TextButton(onClick = {
-                    DraftStore.clear(ctx); restored = false
-                    title = ""; letter = ""; items.clear(); voiceNotes.clear(); songTitle = ""; songUrl = ""; questions.clear(); template = null; emails = ""
-                }) { Text("Empezar de nuevo") }
+            if (restored) BorradorRecuperado {
+                DraftStore.clear(ctx); restored = false
+                title = ""; letter = ""; items.clear(); voiceNotes.clear(); songTitle = ""; songUrl = ""; questions.clear(); template = null; emails = ""
             }
-            OutlinedTextField(title, { title = it }, label = { Text("Título") }, singleLine = true,
-                keyboardOptions = textKeyboard,
-                placeholder = { Text("Cena de aniversario, Grado 2026…") }, modifier = Modifier.fillMaxWidth())
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = ::suggestTitle, enabled = aiBusy == null && (items.any { it.kind == "photo" } || letter.isNotBlank())) {
-                    if (aiBusy == "titulo") CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
-                    Spacer(Modifier.width(6.dp)); Text("Sugerir título y portada")
-                }
-            }
-            if (titleIdeas.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                titleIdeas.forEach { t -> FilterChip(selected = title == t, onClick = { title = t }, label = { Text(t) }) }
-            }
-            OutlinedTextField(letter, { letter = it }, label = { Text("Carta para el futuro") },
-                keyboardOptions = textKeyboard,
-                placeholder = { Text("Querido yo del futuro…") }, minLines = 5, modifier = Modifier.fillMaxWidth())
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = { helpLetter("cálido") }, enabled = aiBusy == null) {
-                    if (aiBusy == "carta") CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
-                    Spacer(Modifier.width(6.dp)); Text(if (letter.isBlank()) "Escribe un borrador" else "Mejorar mi carta")
-                }
-                if (letterBefore != null) TextButton(onClick = { letter = letterBefore!!; letterBefore = null }) { Text("Deshacer") }
-            }
-            Text("¿Te ayudo a empezar? Elige una plantilla:", color = Muted, style = MaterialTheme.typography.bodySmall)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                itemsIndexed(LetterTemplates.all) { _, (id, pair) ->
-                    FilterChip(selected = template == id, onClick = {
-                        template = id
-                        letter = if (letter.isBlank()) pair.second else pair.second + "\n\n" + letter
-                    }, label = { Text(pair.first) })
-                }
-            }
-
-            // ---------- Notas de voz ----------
-            Text("Notas de voz", style = MaterialTheme.typography.titleMedium)
-            voiceNotes.forEachIndexed { i, f ->
-                VoiceNotePlayer(f.absolutePath, "Nota ${i + 1}", onDelete = { voiceNotes.removeAt(i); f.delete() })
-            }
-            if (voiceNotes.size < 5) OutlinedButton(onClick = {
+            SeccionTitulo(title, { title = it }, titleIdeas, pensando = aiBusy == "titulo",
+                puedeSugerir = items.any { it.kind == "photo" } || letter.isNotBlank(), iaOcupada = aiBusy != null, onSugerir = ::suggestTitle)
+            SeccionCarta(letter, { letter = it }, pensando = aiBusy == "carta", iaOcupada = aiBusy != null, onAyuda = { helpLetter("cálido") },
+                puedeDeshacer = letterBefore != null, onDeshacer = { letter = letterBefore!!; letterBefore = null },
+                plantilla = template, onPlantilla = { id, texto -> template = id; letter = ReglasCapsula.conPlantilla(letter, texto) })
+            SeccionNotasDeVoz(voiceNotes, onBorrar = { i -> voiceNotes.removeAt(i).delete() }, grabando = recording, ms = recMs, onGrabar = {
                 if (recording) { recorder.stop()?.let { voiceNotes += it }; recording = false }
                 else micPermission.launch(Manifest.permission.RECORD_AUDIO)
-            }, modifier = Modifier.fillMaxWidth()) {
-                Icon(if (recording) Icons.Filled.Stop else Icons.Filled.Mic, null, tint = if (recording) MaterialTheme.colorScheme.error else LocalContentColorFix())
-                Spacer(Modifier.width(8.dp))
-                Text(if (recording) "Detener · ${fmtDuration(recMs)} / 3:00" else "Grabar una nota de voz")
-            }
-
-            // ---------- Canción del momento ----------
-            Text("Canción del momento", style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(songTitle, { songTitle = it }, label = { Text("Canción y artista") }, singleLine = true,
-                leadingIcon = { Icon(Icons.Filled.MusicNote, null) }, keyboardOptions = textKeyboard,
-                placeholder = { Text("Vivir mi vida · Marc Anthony") }, modifier = Modifier.fillMaxWidth())
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { openSearch(ctx, "https://www.youtube.com/results?search_query=", songTitle) }, enabled = songTitle.isNotBlank()) { Text("Buscar en YouTube") }
-                OutlinedButton(onClick = { openSearch(ctx, "https://open.spotify.com/search/", songTitle) }, enabled = songTitle.isNotBlank()) { Text("En Spotify") }
-            }
-            OutlinedTextField(songUrl, { songUrl = it }, label = { Text("Enlace de la canción (opcional)") }, singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                placeholder = { Text("Pega aquí el enlace de YouTube o Spotify") }, modifier = Modifier.fillMaxWidth())
-            Text("Tranquila: todo lo que llevas se guarda solo. En YouTube o Spotify toca Compartir → Copiar enlace y al volver se pega aquí.", color = Muted, style = MaterialTheme.typography.bodySmall)
-
-            // ---------- Preguntas para el futuro ----------
-            Text("Preguntas para tu yo del futuro", style = MaterialTheme.typography.titleMedium)
-            questions.forEachIndexed { i, q ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.QuestionAnswer, null, tint = Gold, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp)); Text(q, Modifier.weight(1f))
-                    IconButton(onClick = { questions.removeAt(i) }) { Icon(Icons.Filled.Close, "Quitar pregunta") }
-                }
-            }
-            if (questions.size < 5) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    itemsIndexed(LetterTemplates.questions.filter { it !in questions }) { _, q ->
-                        FilterChip(selected = false, onClick = { if (questions.size < 5) questions += q }, label = { Text(q) })
-                    }
-                }
-                OutlinedTextField(newQuestion, { newQuestion = it }, label = { Text("Escribe tu propia pregunta") }, singleLine = true,
-                    keyboardOptions = textKeyboard, modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = { IconButton(onClick = { if (newQuestion.isNotBlank()) { questions += newQuestion.trim(); newQuestion = "" } }) { Icon(Icons.Filled.Add, "Agregar") } })
-            }
-            Text("Las responderás cuando la cápsula se abra.", color = Muted, style = MaterialTheme.typography.bodySmall)
-
-            // ---------- Fotos y videos ----------
-            Text("Fotos y videos", style = MaterialTheme.typography.titleMedium)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(onClick = {
-                    pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
-                }) { Icon(Icons.Filled.PhotoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Galería") }
-                OutlinedButton(onClick = {
+            })
+            SeccionCancion(songTitle, { songTitle = it }, songUrl, { songUrl = it }, onBuscar = { base -> openSearch(ctx, base, songTitle) })
+            SeccionPreguntas(questions, onQuitar = { questions.removeAt(it) }, onAgregar = { q ->
+                val nuevas = ReglasCapsula.agregarPregunta(questions, q)
+                if (nuevas.size != questions.size) questions += nuevas.last()
+            })
+            SeccionMedios(items,
+                onGaleria = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
+                onCamara = {
                     val dir = File(ctx.cacheDir, "camera").apply { mkdirs() }
                     val file = File(dir, "foto_${System.currentTimeMillis()}.jpg")
                     val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", file)
                     cameraUri = uri
                     takePhoto.launch(uri)
-                }) { Icon(Icons.Filled.PhotoCamera, null); Spacer(Modifier.width(6.dp)); Text("Cámara") }
-            }
-            if (items.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                itemsIndexed(items, key = { _, item -> item.uri.toString() }) { i, item ->
-                    Box(Modifier.size(92.dp).clip(RoundedCornerShape(6.dp)).background(NightRaised)) {
-                        if (item.kind == "photo") AsyncImage(item.uri, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                        else Icon(Icons.Filled.Videocam, "Video", tint = Gold, modifier = Modifier.align(Alignment.Center).size(36.dp))
-                        IconButton(onClick = { items.removeAt(i) },
-                            modifier = Modifier.align(Alignment.TopEnd).size(28.dp).padding(3.dp).clip(CircleShape).background(Night)) {
-                            Icon(Icons.Filled.Close, "Quitar", modifier = Modifier.size(16.dp))
-                        }
-                    }
-                }
-            }
-            Text("${items.size} seleccionados · videos de máximo 50 MB", color = Muted, style = MaterialTheme.typography.bodySmall)
+                },
+                onQuitar = { items.removeAt(it) })
 
             HorizontalDivider()
-
-            // ---------- Cuándo se abre ----------
-            SwitchRow("Abrir en una fecha", useDate) { useDate = it }
-            if (useDate) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("1 mes" to 1L, "6 meses" to 6L, "1 año" to 12L, "5 años" to 60L, "10 años" to 120L).forEach { (label, months) ->
-                        val target = ZonedDateTime.now().plusMonths(months).toInstant()
-                        FilterChip(
-                            selected = unlockAt?.let { kotlin.math.abs(it.epochSecond - target.epochSecond) < 120 } == true,
-                            onClick = { unlockAt = target }, label = { Text(label) })
-                    }
-                }
-                OutlinedButton(onClick = { showDate = true }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.Schedule, null); Spacer(Modifier.width(8.dp))
-                    Text(unlockAt?.let { "Se abre el ${it.fmtDateTime()}" } ?: "Elegir fecha y hora")
-                }
-                Text("Ese día te llega una notificación y la cápsula se abre sola.", color = Muted, style = MaterialTheme.typography.bodySmall)
-            }
-
-            // ---------- Clave ----------
-            SwitchRow("Poder abrirla antes con una clave", useKey) { useKey = it }
-            if (useKey) {
-                val vt = if (showKey) VisualTransformation.None else PasswordVisualTransformation()
-                val eye = @Composable {
-                    IconButton(onClick = { showKey = !showKey }) {
-                        Icon(if (showKey) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, if (showKey) "Ocultar" else "Mostrar")
-                    }
-                }
-                OutlinedTextField(key, { key = it }, label = { Text("Clave") }, singleLine = true,
-                    leadingIcon = { Icon(Icons.Filled.Key, null) }, trailingIcon = eye, visualTransformation = vt,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(key2, { key2 = it }, label = { Text("Repite la clave") }, singleLine = true,
-                    visualTransformation = vt, isError = key2.isNotEmpty() && key != key2,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth())
-                Text("Con esta clave la abres cuando quieras. Se guarda cifrada: si la olvidas, nadie puede recuperarla, " +
-                    "pero la cápsula igual se abrirá en su fecha.", color = Muted, style = MaterialTheme.typography.bodySmall)
-            }
+            SeccionFecha(useDate, { useDate = it }, unlockAt, { unlockAt = it }, onElegirFecha = { showDate = true })
+            SeccionClave(useKey, { useKey = it }, key, { key = it }, key2, { key2 = it })
 
             HorizontalDivider()
-
-            // ---------- Dónde ----------
-            SwitchRow("Guardar el lugar", usePlace) { on ->
-                usePlace = on
-                if (on && lat == null) { if (LocationUtil.hasFine(ctx)) locate() else askLocation() }
-            }
-            if (usePlace) {
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (locating) Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(10.dp)); Text("Buscando dónde estás…", color = Muted)
-                    } else if (lat != null) {
-                        Meta(Icons.Filled.Place, address ?: "Ubicación registrada", Cream)
-                        Text("%.5f, %.5f · precisión %d m".format(lat, lng, accuracy ?: 0), color = Muted, style = MaterialTheme.typography.bodySmall)
-                    } else Text("Aún no tenemos tu ubicación.", color = Muted)
-                }
-                if (nearby.isNotEmpty()) {
-                    Text("¿Dónde estás? Toca el lugar:", style = MaterialTheme.typography.titleSmall)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        nearby.forEach { p ->
-                            FilterChip(selected = placeName == p.name, onClick = { placeName = p.name },
-                                label = { Text("${p.name} · ${p.kind} · ${p.distance} m") })
-                        }
+            SeccionLugar(
+                usarLugar = usePlace, onUsarLugar = { on ->
+                    usePlace = on
+                    if (on && lat == null) { if (LocationUtil.hasFine(ctx)) locate() else askLocation() }
+                },
+                buscando = locating, lat = lat, lng = lng, precision = accuracy, direccion = address,
+                cercanos = nearby, nombre = placeName, onNombre = { placeName = it },
+                onActualizar = { if (LocationUtil.hasFine(ctx)) locate() else askLocation() },
+                soloAqui = requirePlace, onSoloAqui = { requirePlace = it }, radio = radius, onRadio = { radius = it },
+                rutas = routes, rutaId = routeId, onRuta = { routeId = it },
+                onCrearRuta = { nombre ->
+                    scope.launch {
+                        runCatching { Repo.createRoute(nombre) }.onSuccess { r -> routes = listOf(r) + routes; routeId = r.id }
+                            .onFailure { error = Repo.friendly(it) }
                     }
-                }
-                OutlinedTextField(placeName, { placeName = it }, label = { Text("Nombre del lugar") },
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                    placeholder = { Text("Restaurante, casa de la abuela…") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedButton(onClick = { if (LocationUtil.hasFine(ctx)) locate() else askLocation() },
-                    enabled = !locating, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.MyLocation, null); Spacer(Modifier.width(8.dp)); Text("Actualizar mi ubicación")
-                }
-                Text("Cuando vuelvas a este lugar te llegará una notificación con estos recuerdos.", color = Muted, style = MaterialTheme.typography.bodySmall)
-                SwitchRow("Solo se abre estando en este lugar", requirePlace) { requirePlace = it }
-                Text("¿Qué tan cerca hay que estar?", style = MaterialTheme.typography.titleSmall)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(50 to "50 m", 100 to "100 m", 150 to "150 m", 500 to "500 m", 1000 to "1 km").forEach { (m, l) ->
-                        FilterChip(selected = radius == m, onClick = { radius = m }, label = { Text(l) })
-                    }
-                }
-
-                // ---------- Ruta de cápsulas ----------
-                Meta(Icons.Filled.Route, "Ruta de cápsulas (se abren en orden)", Cream)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = routeId == null, onClick = { routeId = null }, label = { Text("Ninguna") })
-                    routes.forEach { r -> FilterChip(selected = routeId == r.id, onClick = { routeId = r.id }, label = { Text(r.title) }) }
-                }
-                OutlinedTextField(newRoute, { newRoute = it }, label = { Text("Crear una ruta nueva") }, singleLine = true,
-                    keyboardOptions = textKeyboard, modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = { IconButton(onClick = {
-                        if (newRoute.isNotBlank()) scope.launch {
-                            runCatching { Repo.createRoute(newRoute) }.onSuccess { r -> routes = listOf(r) + routes; routeId = r.id; newRoute = "" }
-                                .onFailure { error = Repo.friendly(it) }
-                        }
-                    }) { Icon(Icons.Filled.Add, "Crear ruta") } })
-                if (routeId != null) Text("Esta cápsula solo se abrirá cuando la anterior de la ruta esté abierta.", color = Muted, style = MaterialTheme.typography.bodySmall)
-            }
+                },
+            )
 
             HorizontalDivider()
-
-            // ---------- Compartir ----------
-            OutlinedTextField(emails, { emails = it }, label = { Text("Compartir con (correos)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                placeholder = { Text("mama@correo.com, amigo@correo.com") }, modifier = Modifier.fillMaxWidth())
-            Text("Deben tener cuenta en Time Capsule. Verán la cápsula cuando se abra. También puedes invitar por enlace o QR después de crearla.", color = Muted, style = MaterialTheme.typography.bodySmall)
-            if (emails.contains('@')) {
-                SwitchRow("Pueden agregar sus fotos y cartas (colaborativa)", contribute) { contribute = it }
-                SwitchRow("Abrir juntos: se abre cuando todos lo acepten", openTogether) { openTogether = it }
-            }
+            SeccionCompartir(emails, { emails = it }, contribute, { contribute = it }, openTogether, { openTogether = it })
 
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             if (saving) {
@@ -643,18 +468,7 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
     }
 }
 
-@Composable
-fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-        Switch(checked, onChange)
-    }
-}
-
 /** Abre YouTube o Spotify buscando la canción. */
 private fun openSearch(ctx: android.content.Context, base: String, q: String) {
     runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, AUri.parse(base + AUri.encode(q.trim())))) }
 }
-
-@Composable
-private fun LocalContentColorFix() = androidx.compose.material3.LocalContentColor.current

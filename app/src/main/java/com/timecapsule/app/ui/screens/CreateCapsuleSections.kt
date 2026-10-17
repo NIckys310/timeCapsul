@@ -405,3 +405,12 @@ internal fun SeccionCompartir(
         SwitchRow("Abrir juntos: se abre cuando todos lo acepten", abrirJuntos, onAbrirJuntos)
     }
 }
+
+/* ---------------- Fila con interruptor ---------------- */
+@Composable
+fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+        Switch(checked, onChange)
+    }
+}
