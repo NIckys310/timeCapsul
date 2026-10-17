@@ -229,35 +229,3 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancelar") } },
     )
 }
-
-/* ---------------- Compartir ---------------- */
-@Composable
-private fun SharePanel(capsuleId: String) {
-    val scope = rememberCoroutineScope()
-    var members by remember { mutableStateOf<List<Member>>(emptyList()) }
-    var email by remember { mutableStateOf("") }
-    var contribute by remember { mutableStateOf(false) }
-    var note by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
-    LaunchedEffect(capsuleId) { members = runCatching { Repo.members(capsuleId) }.getOrDefault(emptyList()) }
-
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightSurface).padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Meta(Icons.Filled.People, "Compartida con", Cream)
-        if (members.isEmpty()) Text("Solo tú por ahora.", color = Muted)
-        members.forEach { Text("• ${it.name ?: it.email}", color = Cream) }
-        OutlinedTextField(email, { email = it }, label = { Text("Correo de familiar o amigo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        Button(onClick = {
-            busy = true; note = null
-            scope.launch {
-                runCatching { Repo.share(capsuleId, email, contribute) }
-                    .onSuccess { name -> note = "Compartida con $name"; email = ""; members = runCatching { Repo.members(capsuleId) }.getOrDefault(members) }
-                    .onFailure { note = Repo.friendly(it) }
-                busy = false
-            }
-        }, enabled = email.contains('@') && !busy) { Text("Compartir") }
-        SwitchRow("Que pueda agregar sus fotos y cartas", contribute) { contribute = it }
-        note?.let { Text(it, color = Gold) }
-        InviteButton(capsuleId)
-    }
-}
