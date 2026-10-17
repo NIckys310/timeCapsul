@@ -307,3 +307,28 @@ internal fun SeccionFecha(usarFecha: Boolean, onUsarFecha: (Boolean) -> Unit, ab
     }
     Ayuda("Ese día te llega una notificación y la cápsula se abre sola.")
 }
+
+/* ---------------- Clave para abrirla antes ---------------- */
+@Composable
+internal fun SeccionClave(
+    usarClave: Boolean, onUsarClave: (Boolean) -> Unit,
+    clave: String, onClave: (String) -> Unit, repetida: String, onRepetida: (String) -> Unit,
+) {
+    SwitchRow("Poder abrirla antes con una clave", usarClave, onUsarClave)
+    if (!usarClave) return
+    var verClave by remember { mutableStateOf(false) }
+    val vt = if (verClave) VisualTransformation.None else PasswordVisualTransformation()
+    val ojo = @Composable {
+        IconButton(onClick = { verClave = !verClave }) {
+            Icon(if (verClave) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, if (verClave) "Ocultar" else "Mostrar")
+        }
+    }
+    OutlinedTextField(clave, onClave, label = { Text("Clave") }, singleLine = true,
+        leadingIcon = { Icon(Icons.Filled.Key, null) }, trailingIcon = ojo, visualTransformation = vt,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth())
+    OutlinedTextField(repetida, onRepetida, label = { Text("Repite la clave") }, singleLine = true,
+        visualTransformation = vt, isError = repetida.isNotEmpty() && clave != repetida,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth())
+    Ayuda("Con esta clave la abres cuando quieras. Se guarda cifrada: si la olvidas, nadie puede recuperarla, " +
+        "pero la cápsula igual se abrirá en su fecha.")
+}
