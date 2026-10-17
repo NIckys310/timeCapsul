@@ -288,3 +288,22 @@ internal fun SeccionMedios(medios: List<PickedItem>, onGaleria: () -> Unit, onCa
     }
     Ayuda("${medios.size} seleccionados · videos de máximo 50 MB")
 }
+
+/* ---------------- Cuándo se abre ---------------- */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun SeccionFecha(usarFecha: Boolean, onUsarFecha: (Boolean) -> Unit, abreEl: Instant?, onAbreEl: (Instant) -> Unit, onElegirFecha: () -> Unit) {
+    SwitchRow("Abrir en una fecha", usarFecha, onUsarFecha)
+    if (!usarFecha) return
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ReglasCapsula.opcionesDeFecha.forEach { (texto, meses) ->
+            val fecha = ReglasCapsula.fechaEn(meses)
+            FilterChip(selected = ReglasCapsula.mismaFecha(abreEl, fecha), onClick = { onAbreEl(fecha) }, label = { Text(texto) })
+        }
+    }
+    OutlinedButton(onClick = onElegirFecha, modifier = Modifier.fillMaxWidth()) {
+        Icon(Icons.Filled.Schedule, null); Spacer(Modifier.width(8.dp))
+        Text(abreEl?.let { "Se abre el ${it.fmtDateTime()}" } ?: "Elegir fecha y hora")
+    }
+    Ayuda("Ese día te llega una notificación y la cápsula se abre sola.")
+}
