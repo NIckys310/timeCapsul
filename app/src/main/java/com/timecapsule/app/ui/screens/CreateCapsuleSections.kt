@@ -240,3 +240,28 @@ internal fun SeccionCancion(
         placeholder = { Text("Pega aquí el enlace de YouTube o Spotify") }, modifier = Modifier.fillMaxWidth())
     Ayuda("Tranquila: todo lo que llevas se guarda solo. En YouTube o Spotify toca Compartir → Copiar enlace y al volver se pega aquí.")
 }
+
+/* ---------------- Preguntas para el futuro ---------------- */
+@Composable
+internal fun SeccionPreguntas(preguntas: List<String>, onQuitar: (Int) -> Unit, onAgregar: (String) -> Unit) {
+    var nueva by remember { mutableStateOf("") }
+    Text("Preguntas para tu yo del futuro", style = MaterialTheme.typography.titleMedium)
+    preguntas.forEachIndexed { i, q ->
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.QuestionAnswer, null, tint = Gold, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp)); Text(q, Modifier.weight(1f))
+            IconButton(onClick = { onQuitar(i) }) { Icon(Icons.Filled.Close, "Quitar pregunta") }
+        }
+    }
+    if (preguntas.size < ReglasCapsula.MAX_PREGUNTAS) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            itemsIndexed(LetterTemplates.questions.filter { it !in preguntas }) { _, q ->
+                FilterChip(selected = false, onClick = { onAgregar(q) }, label = { Text(q) })
+            }
+        }
+        OutlinedTextField(nueva, { nueva = it }, label = { Text("Escribe tu propia pregunta") }, singleLine = true,
+            keyboardOptions = tecladoTexto, modifier = Modifier.fillMaxWidth(),
+            trailingIcon = { IconButton(onClick = { if (nueva.isNotBlank()) { onAgregar(nueva); nueva = "" } }) { Icon(Icons.Filled.Add, "Agregar") } })
+    }
+    Ayuda("Las responderás cuando la cápsula se abra.")
+}
