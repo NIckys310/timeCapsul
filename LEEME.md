@@ -76,3 +76,22 @@ El archivo queda en `app/release/app-release.apk`. Envíalo por WhatsApp o Drive
 - Supabase gratis: 500 MB de base de datos, 1 GB de archivos y videos de máximo 50 MB.
 - Un proyecto gratis se pausa tras 7 días sin uso: entra al panel y pulsa *Restore*.
 - La IA consume créditos de tu cuenta de Anthropic (cada resumen cuesta centavos).
+
+## Pruebas automáticas
+Time Capsule tiene **69 pruebas** que corren en la computadora, sin celular:
+
+```bash
+gradlew :app:testDebugUnitTest
+```
+
+| Archivo | Qué revisa |
+|---|---|
+| `FormatoTest` | "Faltan 3 años", "5 días", "2 h 10 min"; fechas en español |
+| `CapsulaTest` | Cuándo y dónde se abre una cápsula; fechas dañadas; clave para abrir antes |
+| `PistasTest` | "Caliente o frío" para encontrar la cápsula; tendencia y distancia |
+| `BorradorTest` | El borrador que no se pierde al ir a Spotify/YouTube; nunca guarda la clave |
+| `PlantillasTest` | Plantillas de carta y preguntas para el futuro |
+| `MensajesTest` | Errores en español sencillo; línea de tiempo guardada |
+| `SeguridadTest` | RLS en todas las tablas, funciones seguras y ninguna clave secreta en el código |
+
+En GitHub, cada cambio corre las pruebas, el análisis de Android y crea el APK (`.github/workflows/android.yml`).
