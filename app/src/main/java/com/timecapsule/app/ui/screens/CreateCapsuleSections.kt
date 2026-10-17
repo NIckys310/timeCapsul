@@ -221,3 +221,22 @@ internal fun SeccionNotasDeVoz(notas: List<File>, onBorrar: (Int) -> Unit, graba
         Text(if (grabando) "Detener · ${fmtDuration(ms)} / 3:00" else "Grabar una nota de voz")
     }
 }
+
+/* ---------------- Canción del momento ---------------- */
+@Composable
+internal fun SeccionCancion(
+    titulo: String, onTitulo: (String) -> Unit, enlace: String, onEnlace: (String) -> Unit, onBuscar: (base: String) -> Unit,
+) {
+    Text("Canción del momento", style = MaterialTheme.typography.titleMedium)
+    OutlinedTextField(titulo, onTitulo, label = { Text("Canción y artista") }, singleLine = true,
+        leadingIcon = { Icon(Icons.Filled.MusicNote, null) }, keyboardOptions = tecladoTexto,
+        placeholder = { Text("Vivir mi vida · Marc Anthony") }, modifier = Modifier.fillMaxWidth())
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = { onBuscar("https://www.youtube.com/results?search_query=") }, enabled = titulo.isNotBlank()) { Text("Buscar en YouTube") }
+        OutlinedButton(onClick = { onBuscar("https://open.spotify.com/search/") }, enabled = titulo.isNotBlank()) { Text("En Spotify") }
+    }
+    OutlinedTextField(enlace, onEnlace, label = { Text("Enlace de la canción (opcional)") }, singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        placeholder = { Text("Pega aquí el enlace de YouTube o Spotify") }, modifier = Modifier.fillMaxWidth())
+    Ayuda("Tranquila: todo lo que llevas se guarda solo. En YouTube o Spotify toca Compartir → Copiar enlace y al volver se pega aquí.")
+}
