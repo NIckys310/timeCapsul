@@ -183,3 +183,28 @@ internal fun SeccionTitulo(
         ideas.forEach { t -> FilterChip(selected = titulo == t, onClick = { onTitulo(t) }, label = { Text(t) }) }
     }
 }
+
+/* ---------------- Carta (con ayuda de la IA y plantillas) ---------------- */
+@Composable
+internal fun SeccionCarta(
+    carta: String, onCarta: (String) -> Unit,
+    pensando: Boolean, iaOcupada: Boolean, onAyuda: () -> Unit, puedeDeshacer: Boolean, onDeshacer: () -> Unit,
+    plantilla: String?, onPlantilla: (id: String, texto: String) -> Unit,
+) {
+    OutlinedTextField(carta, onCarta, label = { Text("Carta para el futuro") },
+        keyboardOptions = tecladoTexto,
+        placeholder = { Text("Querido yo del futuro…") }, minLines = 5, modifier = Modifier.fillMaxWidth())
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        OutlinedButton(onClick = onAyuda, enabled = !iaOcupada) {
+            if (pensando) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
+            Spacer(Modifier.width(6.dp)); Text(if (carta.isBlank()) "Escribe un borrador" else "Mejorar mi carta")
+        }
+        if (puedeDeshacer) TextButton(onClick = onDeshacer) { Text("Deshacer") }
+    }
+    Ayuda("¿Te ayudo a empezar? Elige una plantilla:")
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        itemsIndexed(LetterTemplates.all) { _, (id, par) ->
+            FilterChip(selected = plantilla == id, onClick = { onPlantilla(id, par.second) }, label = { Text(par.first) })
+        }
+    }
+}
