@@ -1,5 +1,8 @@
 package com.timecapsule.app.ui.screens
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import com.timecapsule.app.ui.components.goldBorder
 import com.timecapsule.app.ui.components.pressScale
@@ -64,7 +67,8 @@ import com.timecapsule.app.util.fmtDate
 /** Imagen guardada en la nube (pide un enlace temporal y la muestra). */
 @Composable
 fun CloudImage(path: String, modifier: Modifier = Modifier) {
-    val url by produceState<String?>(null, path) { value = runCatching { Repo.signedUrl(path) }.getOrNull() }
+    var url by remember(path) { mutableStateOf<String?>(null) }
+    LaunchedEffect(path) { url = runCatching { Repo.signedUrl(path) }.getOrNull() }
     if (url != null) AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier)
     else Box(modifier.background(NightSurface))
 }

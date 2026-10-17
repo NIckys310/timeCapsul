@@ -129,7 +129,8 @@ fun VoiceNotes(media: List<Media>) {
     if (notes.isEmpty()) return
     Section("Notas de voz (${notes.size})", Icons.Filled.Mic) {
         notes.forEachIndexed { i, m ->
-            val url by produceState<String?>(null, m.path) { value = runCatching { Repo.signedUrl(m.path) }.getOrNull() }
+            var url by remember(m.path) { mutableStateOf<String?>(null) }
+            LaunchedEffect(m.path) { url = runCatching { Repo.signedUrl(m.path) }.getOrNull() }
             VoiceNotePlayer(url, m.addedByName?.let { "Nota de $it" } ?: "Nota ${i + 1}")
         }
     }
