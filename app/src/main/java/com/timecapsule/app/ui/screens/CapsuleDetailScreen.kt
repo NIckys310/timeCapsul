@@ -230,38 +230,6 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
     )
 }
 
-/* ---------------- Ver foto o video en grande ---------------- */
-@Composable
-private fun MediaViewer(m: Media, onClose: () -> Unit) {
-    var url by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(m.path) { url = runCatching { Repo.signedUrl(m.path) }.getOrNull() }
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
-            val u = url
-            when {
-                u == null -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                m.kind == "photo" -> AsyncImage(u, null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
-                else -> VideoPlayer(u)
-            }
-            IconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)) {
-                Icon(Icons.Filled.Close, "Cerrar", tint = Color.White)
-            }
-        }
-    }
-}
-
-@Composable
-private fun VideoPlayer(url: String) {
-    val ctx = LocalContext.current
-    val player = remember(url) {
-        ExoPlayer.Builder(ctx).build().apply {
-            setMediaItem(MediaItem.fromUri(url)); prepare(); playWhenReady = true
-        }
-    }
-    DisposableEffect(player) { onDispose { player.release() } }
-    AndroidView(factory = { PlayerView(it).apply { this.player = player } }, modifier = Modifier.fillMaxSize())
-}
-
 /* ---------------- Compartir ---------------- */
 @Composable
 private fun SharePanel(capsuleId: String) {
