@@ -208,3 +208,16 @@ internal fun SeccionCarta(
         }
     }
 }
+
+/* ---------------- Notas de voz ---------------- */
+@Composable
+internal fun SeccionNotasDeVoz(notas: List<File>, onBorrar: (Int) -> Unit, grabando: Boolean, ms: Long, onGrabar: () -> Unit) {
+    Text("Notas de voz", style = MaterialTheme.typography.titleMedium)
+    notas.forEachIndexed { i, f -> VoiceNotePlayer(f.absolutePath, "Nota ${i + 1}", onDelete = { onBorrar(i) }) }
+    if (notas.size < ReglasCapsula.MAX_NOTAS_DE_VOZ) OutlinedButton(onClick = onGrabar, modifier = Modifier.fillMaxWidth()) {
+        Icon(if (grabando) Icons.Filled.Stop else Icons.Filled.Mic, null,
+            tint = if (grabando) MaterialTheme.colorScheme.error else androidx.compose.material3.LocalContentColor.current)
+        Spacer(Modifier.width(8.dp))
+        Text(if (grabando) "Detener · ${fmtDuration(ms)} / 3:00" else "Grabar una nota de voz")
+    }
+}
