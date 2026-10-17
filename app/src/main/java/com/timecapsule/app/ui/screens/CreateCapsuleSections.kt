@@ -332,3 +332,60 @@ internal fun SeccionClave(
     Ayuda("Con esta clave la abres cuando quieras. Se guarda cifrada: si la olvidas, nadie puede recuperarla, " +
         "pero la cápsula igual se abrirá en su fecha.")
 }
+
+/* ---------------- Dónde (lugar, radio y ruta) ---------------- */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun SeccionLugar(
+    usarLugar: Boolean, onUsarLugar: (Boolean) -> Unit,
+    buscando: Boolean, lat: Double?, lng: Double?, precision: Int?, direccion: String?,
+    cercanos: List<NearbyPlace>, nombre: String, onNombre: (String) -> Unit, onActualizar: () -> Unit,
+    soloAqui: Boolean, onSoloAqui: (Boolean) -> Unit, radio: Int, onRadio: (Int) -> Unit,
+    rutas: List<Route>, rutaId: String?, onRuta: (String?) -> Unit, onCrearRuta: (String) -> Unit,
+) {
+    SwitchRow("Guardar el lugar", usarLugar, onUsarLugar)
+    if (!usarLugar) return
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (buscando) Row(verticalAlignment = Alignment.CenterVertically) {
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(10.dp)); Text("Buscando dónde estás…", color = Muted)
+        } else if (lat != null) {
+            Meta(Icons.Filled.Place, direccion ?: "Ubicación registrada", Cream)
+            Ayuda("%.5f, %.5f · precisión %d m".format(lat, lng, precision ?: 0))
+        } else Text("Aún no tenemos tu ubicación.", color = Muted)
+    }
+    if (cercanos.isNotEmpty()) {
+        Text("¿Dónde estás? Toca el lugar:", style = MaterialTheme.typography.titleSmall)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            cercanos.forEach { p ->
+                FilterChip(selected = nombre == p.name, onClick = { onNombre(p.name) }, label = { Text("${p.name} · ${p.kind} · ${p.distance} m") })
+            }
+        }
+    }
+    OutlinedTextField(nombre, onNombre, label = { Text("Nombre del lugar") },
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+        placeholder = { Text("Restaurante, casa de la abuela…") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+    OutlinedButton(onClick = onActualizar, enabled = !buscando, modifier = Modifier.fillMaxWidth()) {
+        Icon(Icons.Filled.MyLocation, null); Spacer(Modifier.width(8.dp)); Text("Actualizar mi ubicación")
+    }
+    Ayuda("Cuando vuelvas a este lugar te llegará una notificación con estos recuerdos.")
+    SwitchRow("Solo se abre estando en este lugar", soloAqui, onSoloAqui)
+    Text("¿Qué tan cerca hay que estar?", style = MaterialTheme.typography.titleSmall)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(50 to "50 m", 100 to "100 m", 150 to "150 m", 500 to "500 m", 1000 to "1 km").forEach { (m, l) ->
+            FilterChip(selected = radio == m, onClick = { onRadio(m) }, label = { Text(l) })
+        }
+    }
+    // Ruta de cápsulas
+    var nuevaRuta by remember { mutableStateOf("") }
+    Meta(Icons.Filled.Route, "Ruta de cápsulas (se abren en orden)", Cream)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(selected = rutaId == null, onClick = { onRuta(null) }, label = { Text("Ninguna") })
+        rutas.forEach { r -> FilterChip(selected = rutaId == r.id, onClick = { onRuta(r.id) }, label = { Text(r.title) }) }
+    }
+    OutlinedTextField(nuevaRuta, { nuevaRuta = it }, label = { Text("Crear una ruta nueva") }, singleLine = true,
+        keyboardOptions = tecladoTexto, modifier = Modifier.fillMaxWidth(),
+        trailingIcon = { IconButton(onClick = { if (nuevaRuta.isNotBlank()) { onCrearRuta(nuevaRuta); nuevaRuta = "" } }) { Icon(Icons.Filled.Add, "Crear ruta") } })
+    if (rutaId != null) Ayuda("Esta cápsula solo se abrirá cuando la anterior de la ruta esté abierta.")
+}
