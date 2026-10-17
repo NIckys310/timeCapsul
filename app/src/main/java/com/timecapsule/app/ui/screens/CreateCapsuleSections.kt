@@ -389,3 +389,19 @@ internal fun SeccionLugar(
         trailingIcon = { IconButton(onClick = { if (nuevaRuta.isNotBlank()) { onCrearRuta(nuevaRuta); nuevaRuta = "" } }) { Icon(Icons.Filled.Add, "Crear ruta") } })
     if (rutaId != null) Ayuda("Esta cápsula solo se abrirá cuando la anterior de la ruta esté abierta.")
 }
+
+/* ---------------- Compartir ---------------- */
+@Composable
+internal fun SeccionCompartir(
+    correos: String, onCorreos: (String) -> Unit,
+    colaborativa: Boolean, onColaborativa: (Boolean) -> Unit, abrirJuntos: Boolean, onAbrirJuntos: (Boolean) -> Unit,
+) {
+    OutlinedTextField(correos, onCorreos, label = { Text("Compartir con (correos)") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        placeholder = { Text("mama@correo.com, amigo@correo.com") }, modifier = Modifier.fillMaxWidth())
+    Ayuda("Deben tener cuenta en Time Capsule. Verán la cápsula cuando se abra. También puedes invitar por enlace o QR después de crearla.")
+    if (ReglasCapsula.correos(correos).isNotEmpty()) {
+        SwitchRow("Pueden agregar sus fotos y cartas (colaborativa)", colaborativa, onColaborativa)
+        SwitchRow("Abrir juntos: se abre cuando todos lo acepten", abrirJuntos, onAbrirJuntos)
+    }
+}
