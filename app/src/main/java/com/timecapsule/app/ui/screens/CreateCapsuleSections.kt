@@ -265,3 +265,26 @@ internal fun SeccionPreguntas(preguntas: List<String>, onQuitar: (Int) -> Unit, 
     }
     Ayuda("Las responderás cuando la cápsula se abra.")
 }
+
+/* ---------------- Fotos y videos ---------------- */
+@Composable
+internal fun SeccionMedios(medios: List<PickedItem>, onGaleria: () -> Unit, onCamara: () -> Unit, onQuitar: (Int) -> Unit) {
+    Text("Fotos y videos", style = MaterialTheme.typography.titleMedium)
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedButton(onClick = onGaleria) { Icon(Icons.Filled.PhotoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Galería") }
+        OutlinedButton(onClick = onCamara) { Icon(Icons.Filled.PhotoCamera, null); Spacer(Modifier.width(6.dp)); Text("Cámara") }
+    }
+    if (medios.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        itemsIndexed(medios, key = { _, m -> m.uri.toString() }) { i, m ->
+            Box(Modifier.size(92.dp).clip(RoundedCornerShape(6.dp)).background(NightRaised)) {
+                if (m.kind == "photo") AsyncImage(m.uri, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                else Icon(Icons.Filled.Videocam, "Video", tint = Gold, modifier = Modifier.align(Alignment.Center).size(36.dp))
+                IconButton(onClick = { onQuitar(i) },
+                    modifier = Modifier.align(Alignment.TopEnd).size(28.dp).padding(3.dp).clip(CircleShape).background(Night)) {
+                    Icon(Icons.Filled.Close, "Quitar", modifier = Modifier.size(16.dp))
+                }
+            }
+        }
+    }
+    Ayuda("${medios.size} seleccionados · videos de máximo 50 MB")
+}
