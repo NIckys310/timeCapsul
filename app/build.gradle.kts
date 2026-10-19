@@ -17,8 +17,22 @@ android {
         versionName = "2.8"
     }
 
+    // Una sola llave para TODOS los APK (los de este PC y los de GitHub):
+    // así "Continuar con Google" funciona para cualquier persona que instale la app.
+    // Su huella (SHA-1) está registrada en Google Cloud. Ver firma/LEEME.md
+    signingConfigs {
+        create("timecapsule") {
+            storeFile = file("firma/timecapsule.keystore")
+            storePassword = "android"
+            keyAlias = "timecapsule"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug { signingConfig = signingConfigs.getByName("timecapsule") }
         release {
+            signingConfig = signingConfigs.getByName("timecapsule")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
