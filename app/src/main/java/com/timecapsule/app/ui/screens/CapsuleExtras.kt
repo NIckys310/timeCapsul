@@ -136,36 +136,6 @@ fun VoiceNotes(media: List<Media>) {
     }
 }
 
-/* ---------------- Preguntas para el futuro ---------------- */
-@Composable
-fun QuestionsCard(c: Capsule) {
-    if (c.questions.isEmpty()) return
-    val scope = rememberCoroutineScope()
-    val me = Repo.userId()
-    var answers by remember { mutableStateOf<List<Answer>>(emptyList()) }
-    val drafts = remember { mutableStateMapOf<Int, String>() }
-    var saved by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(c.id) {
-        answers = runCatching { Repo.answers(c.id) }.getOrDefault(emptyList())
-        answers.filter { it.userId == me }.forEach { drafts[it.idx] = it.answer }
-    }
-    Section("Preguntas para tu yo del futuro", Icons.Filled.QuestionAnswer) {
-        c.questions.forEachIndexed { i, q ->
-            Text(q, style = MaterialTheme.typography.titleSmall)
-            OutlinedTextField(drafts[i].orEmpty(), { drafts[i] = it }, placeholder = { Text("Tu respuesta de hoy…") },
-                keyboardOptions = keyboard, modifier = Modifier.fillMaxWidth())
-            answers.filter { it.idx == i && it.userId != me }.forEach { a -> Text("• ${a.answer}", color = LocalPalette.current.muted) }
-        }
-        Button(onClick = {
-            scope.launch {
-                runCatching { drafts.filterValues { it.isNotBlank() }.forEach { (i, v) -> Repo.saveAnswer(c.id, i, v) } }
-                    .onSuccess { saved = "Respuestas guardadas" }.onFailure { saved = Repo.friendly(it) }
-            }
-        }) { Text("Guardar respuestas") }
-        saved?.let { Text(it, color = LocalPalette.current.olive) }
-    }
-}
-
 /* ---------------- Reacciones ---------------- */
 private val EMOJIS = listOf("❤️", "😂", "😢", "😮", "🙏", "🔥")
 
