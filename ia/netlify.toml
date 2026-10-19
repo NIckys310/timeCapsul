@@ -1,0 +1,20 @@
+# =========================================================
+# TIME CAPSULE · IA en Netlify
+# Netlify pone la clave de Claude sola (AI Gateway): no hay claves en el código.
+# =========================================================
+[build]
+  publish = "publico"
+  functions = "netlify/functions"
+  command = "npm install --omit=dev"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Content-Security-Policy = "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"

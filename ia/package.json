@@ -1,0 +1,16 @@
+{
+  "name": "timecapsule-ia",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Time Capsule: funciones de IA (Claude) en Netlify",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.mjs\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
