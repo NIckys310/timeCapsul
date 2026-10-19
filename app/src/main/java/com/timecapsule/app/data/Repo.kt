@@ -5,13 +5,11 @@ import com.timecapsule.app.util.MediaUtil
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
-import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.storage.storage
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -237,31 +235,33 @@ object Repo {
 
     /* ---------------- IA ---------------- */
 
-    suspend fun aiSummary(capsuleId: String): String {
-        val res = supabase.functions.invoke(
-            function = "ai-memories",
-            body = buildJsonObject { put("action", "summary"); put("capsule_id", capsuleId) },
-        )
-        val obj = json.parseToJsonElement(res.bodyAsText()).jsonObject
-        obj["error"]?.jsonPrimitive?.contentOrNull?.let { error(it) }
-        return obj["summary"]?.jsonPrimitive?.contentOrNull ?: error("La IA no devolvió un resumen")
-    }
+    suspend fun aiSummary(capsuleId: String): String =
+        ai(buildJsonObject { put("action", "summary"); put("capsule_id", capsuleId) })["summary"]?.jsonPrimitive?.contentOrNull
+            ?: error("La IA no devolvió un resumen")
 
-    suspend fun aiTimeline(): Timeline {
-        val res = supabase.functions.invoke(
-            function = "ai-memories",
-            body = buildJsonObject { put("action", "timeline") },
-        )
-        val text = res.bodyAsText()
-        json.parseToJsonElement(text).jsonObject["error"]?.jsonPrimitive?.contentOrNull?.let { error(it) }
-        return json.decodeFromString(Timeline.serializer(), text)
-    }
+    suspend fun aiTimeline(): Timeline = json.decodeFromJsonElement(Timeline.serializer(), ai(buildJsonObject { put("action", "timeline") }))
 
-    private suspend fun ai(body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject {
-        val res = supabase.functions.invoke(function = "ai-memories", body = body)
-        val obj = json.parseToJsonElement(res.bodyAsText()).jsonObject
-        obj["error"]?.jsonPrimitive?.contentOrNull?.let { error(if (it.contains("ANTHROPIC_API_KEY")) "La IA aún no está activada (falta la clave de Claude en Supabase)." else it) }
-        return obj
+    /**
+     * Llama a la IA (función de Netlify) con la sesión de la persona.
+     * El servidor revisa la sesión y el límite diario; la clave de Claude nunca está en la app.
+     */
+    private suspend fun ai(body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject = withContext(Dispatchers.IO) {
+        val token = supabase.auth.currentAccessTokenOrNull() ?: error("Inicia sesión de nuevo para usar la IA.")
+        val c = java.net.URL(Config.IA_URL).openConnection() as java.net.HttpURLConnection
+        try {
+            c.requestMethod = "POST"
+            c.connectTimeout = 15_000
+            c.readTimeout = 90_000          // la IA puede tardar mirando fotos
+            c.doOutput = true
+            c.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            c.setRequestProperty("Authorization", "Bearer $token")
+            c.outputStream.use { it.write(body.toString().toByteArray()) }
+            val texto = (if (c.responseCode < 400) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+            val obj = runCatching { json.parseToJsonElement(texto).jsonObject }.getOrNull()
+                ?: error(if (c.responseCode == 401 && texto.contains("Login")) "La IA está en mantenimiento. Intenta más tarde." else "La IA no respondió bien (${c.responseCode}).")
+            obj["error"]?.jsonPrimitive?.contentOrNull?.let { error(it) }
+            obj
+        } finally { c.disconnect() }
     }
 
     /** Sugiere 3 títulos y cuál foto usar de portada (fotos en JPEG pequeño, base64). */
