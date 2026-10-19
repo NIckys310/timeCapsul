@@ -92,10 +92,10 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.time.OffsetDateTime
 
-private val keyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+internal val keyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
 
 @Composable
-private fun Section(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, content: @Composable () -> Unit) {
+internal fun Section(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, content: @Composable () -> Unit) {
     val p = LocalPalette.current
     Column(
         Modifier.fillMaxWidth().enterAnim().clip(RoundedCornerShape(8.dp)).background(p.surface).goldBorder(RoundedCornerShape(8.dp))
