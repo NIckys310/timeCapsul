@@ -1,0 +1,27 @@
+# Revisa la función de IA de Time Capsule (Netlify) en cada cambio de la carpeta ia/.
+name: Pruebas de la IA de Time Capsule
+
+on:
+  push:
+    branches: [main]
+    paths: ['ia/**', '.github/workflows/ia.yml']
+  pull_request:
+    paths: ['ia/**']
+  workflow_dispatch:
+
+jobs:
+  ia:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ia
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ia/package-lock.json
+      - run: npm ci
+      - name: Pruebas (sesión, límite diario, acciones y textos para Claude)
+        run: npm test
