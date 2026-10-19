@@ -1,0 +1,11 @@
+/* Time Capsule · páginas públicas (inicio, privacidad, condiciones) */
+:root { color-scheme: dark; }
+body { margin: 0; min-height: 100vh; font-family: Georgia, serif; background: #2E1E14; color: #F7E8CC; padding: 32px 18px; line-height: 1.65; }
+main { max-width: 720px; margin: 0 auto; }
+h1 { color: #F2C14E; margin: 0 0 6px; font-size: 32px; }
+h2 { color: #F2C14E; margin-top: 28px; font-size: 21px; }
+p, li { color: #e8d6b6; }
+.lema { font-style: italic; color: #d9c39e; }
+a { color: #F2C14E; }
+nav { margin-top: 28px; padding-top: 14px; border-top: 1px solid #A67C3D; }
+small { color: #b9a37f; }
