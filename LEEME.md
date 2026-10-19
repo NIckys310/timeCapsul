@@ -107,3 +107,23 @@ En GitHub, cada cambio corre las pruebas, el análisis de Android y crea el APK 
 | Extras de una cápsula | `CapsuleExtras.kt` (canción y notas de voz) + `CapsuleQuestions.kt` + `CapsuleSocial.kt` (reacciones, comentarios, cartas) + `CapsuleTogether.kt` (aportar, abrir juntos, rutas) + `CapsuleInvite.kt` + `HotColdFinder.kt` |
 | Textos de las notificaciones | `notify/Avisos.kt` (con pruebas) |
 | Caliente o frío | `util/Pistas.kt` |
+
+## IA (Claude) · carpeta `ia/`
+La IA de Time Capsule vive en Netlify: **https://timecapsule-ia.netlify.app**.
+Netlify pone la clave de Claude por su cuenta (AI Gateway): **no hay ninguna clave secreta en la app ni en el código**.
+
+| Acción | Qué hace |
+|---|---|
+| `summary` | Resumen emotivo de una cápsula abierta mirando sus fotos |
+| `timeline` | Línea de tiempo con capítulos y notas por lugar (las cápsulas cerradas no revelan su contenido) |
+| `suggest` | 3 títulos y la mejor foto de portada al crear |
+| `letter` | Ayuda a escribir o mejorar la carta |
+| `year_ago` | Recuerdo de "hace un año" |
+| `album` | Textos del álbum animado |
+
+- Solo responde a personas con sesión iniciada en Time Capsule (revisa el token con Supabase).
+- Máximo **40 usos por persona cada 24 h** (tabla `ai_uso`, `supabase/4_uso_de_ia.sql`).
+- Todo se lee con la sesión de la persona: se respetan las reglas RLS.
+- Pruebas: `cd ia && npm test` (18 pruebas, sin gastar IA real).
+- Publicar: `npx netlify-cli deploy --prod --dir publico --functions netlify/functions` desde `ia/`.
+- La función vieja de Supabase (`supabase/functions/ai-memories`) ya no se usa.
