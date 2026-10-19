@@ -136,58 +136,6 @@ fun VoiceNotes(media: List<Media>) {
     }
 }
 
-/* ---------------- Invitar por enlace o QR ---------------- */
-@Composable
-fun InviteButton(capsuleId: String) {
-    val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var code by remember { mutableStateOf<String?>(null) }
-    var contribute by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var ask by remember { mutableStateOf(false) }
-    OutlinedButton(onClick = { ask = true }, modifier = Modifier.fillMaxWidth()) {
-        Icon(Icons.Filled.QrCode2, null); Spacer(Modifier.width(6.dp)); Text("Invitar con enlace o QR")
-    }
-    if (ask) AlertDialog(
-        onDismissRequest = { ask = false; code = null },
-        title = { Text(if (code == null) "Invitar a la cápsula" else "Código de invitación") },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                val c = code
-                if (c == null) {
-                    SwitchRow("Que pueda agregar sus fotos y cartas", contribute) { contribute = it }
-                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                } else {
-                    val link = "timecapsule://invitar/$c"
-                    val bmp = remember(link) { qrBitmap(link, 640) }
-                    Image(bmp.asImageBitmap(), "Código QR", Modifier.size(220.dp).background(androidx.compose.ui.graphics.Color.White).padding(8.dp))
-                    Text(c, fontFamily = Typewriter, fontSize = 28.sp, letterSpacing = 4.sp)
-                    Text("Escanéalo con la cámara de otro celular que tenga Time Capsule, o compártelo: en la app se escribe en “Unirme con código”. Vence en 7 días.",
-                        color = LocalPalette.current.muted, style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        },
-        confirmButton = {
-            val c = code
-            if (c == null) TextButton(onClick = {
-                scope.launch { runCatching { Repo.createInvite(capsuleId, contribute) }.onSuccess { code = it }.onFailure { error = Repo.friendly(it) } }
-            }) { Text("Crear código") }
-            else TextButton(onClick = {
-                val text = "Te invito a mi cápsula del tiempo 💌\nAbre Time Capsule → “Unirme con código” y escribe: $c\n(o toca: timecapsule://invitar/$c)"
-                runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Compartir invitación")) }
-            }) { Icon(Icons.Filled.Share, null); Spacer(Modifier.width(4.dp)); Text("Compartir") }
-        },
-        dismissButton = { TextButton(onClick = { ask = false; code = null }) { Text("Cerrar") } },
-    )
-}
-
-fun qrBitmap(text: String, size: Int): Bitmap {
-    val m = QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, size, size)
-    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)
-    for (x in 0 until size) for (y in 0 until size) bmp.setPixel(x, y, if (m[x, y]) 0xFF2E241C.toInt() else 0xFFFFFFFF.toInt())
-    return bmp
-}
-
 /* ---------------- Caliente o frío (búsqueda del tesoro) ---------------- */
 @Composable
 fun HotColdFinder(c: Capsule) {
