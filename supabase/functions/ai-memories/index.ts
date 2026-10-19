@@ -1,5 +1,7 @@
 // =====================================================================
 //  TIME CAPSULE · Función de IA (Supabase Edge Function "ai-memories")
+//  ⚠ YA NO SE USA: la IA ahora está en Netlify (carpeta ia/), sin claves secretas.
+//    Se deja como referencia.
 //  - action "summary":  resume una cápsula abierta mirando sus fotos
 //  - action "timeline": crea capítulos de vida y notas por lugar
 //  - action "suggest":  sugiere títulos y la mejor portada (fotos aún sin subir)
