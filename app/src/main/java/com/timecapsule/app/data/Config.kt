@@ -12,7 +12,7 @@ object Config {
      * Continuar con Google: ID de cliente WEB de Google Cloud (es público, no es secreto).
      * Vacío = el botón no aparece.
      */
-    const val GOOGLE_WEB_CLIENT_ID = ""
+    const val GOOGLE_WEB_CLIENT_ID = "251517855960-kse7qokn70qnfps28e4i0nmn1ddjpb99.apps.googleusercontent.com"
 
     /** Funciones de IA (Netlify): la clave de Claude la pone Netlify, no va en la app. */
     const val IA_URL = "https://timecapsule-ia.netlify.app/.netlify/functions/ia"
