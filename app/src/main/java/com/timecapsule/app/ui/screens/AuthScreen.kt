@@ -60,6 +60,15 @@ fun AuthScreen() {
     var busy by remember { mutableStateOf(false) }
     var msg by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+
+    fun conGoogle() {
+        msg = null; busy = true
+        scope.launch {
+            runCatching { com.timecapsule.app.data.GoogleLogin.entrar(ctx) }.onFailure { msg = Repo.friendly(it) }
+            busy = false
+        }
+    }
 
     fun submit() {
         msg = null
@@ -123,6 +132,16 @@ fun AuthScreen() {
         Button(onClick = ::submit, enabled = !busy, modifier = Modifier.fillMaxWidth().height(52.dp)) {
             if (busy) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
             else Text(if (register) "Crear mi cuenta" else "Entrar")
+        }
+        if (com.timecapsule.app.data.GoogleLogin.disponible()) {
+            Spacer(Modifier.height(14.dp))
+            Text("— o —", color = Muted, fontFamily = Typewriter)
+            Spacer(Modifier.height(14.dp))
+            androidx.compose.material3.OutlinedButton(onClick = ::conGoogle, enabled = !busy, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                Text("G", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.size(10.dp))
+                Text("Continuar con Google")
+            }
         }
         if (!register) TextButton(onClick = { register = true }) { Text("¿No tienes cuenta? Crea una") }
     }
