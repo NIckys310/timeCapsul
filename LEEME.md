@@ -78,7 +78,7 @@ El archivo queda en `app/release/app-release.apk`. Envíalo por WhatsApp o Drive
 - La IA consume créditos de tu cuenta de Anthropic (cada resumen cuesta centavos).
 
 ## Pruebas automáticas
-Time Capsule tiene **90 pruebas** que corren en la computadora, sin celular:
+Time Capsule tiene **101 pruebas** que corren en la computadora, sin celular:
 
 ```bash
 gradlew :app:testDebugUnitTest
@@ -93,6 +93,7 @@ gradlew :app:testDebugUnitTest
 | `PlantillasTest` | Plantillas de carta y preguntas para el futuro |
 | `MensajesTest` | Errores en español sencillo; línea de tiempo guardada |
 | `ReglasCapsulaTest` | Reglas para sellar una cápsula: título, carta, fecha, lugar, clave, 20 fotos y 1 video, correos, canción y preguntas |
+| `AvisosTest` | Cuenta regresiva (1 semana, 1 día, 1 hora), avisos de apertura, cápsulas compartidas y actividad |
 | `SeguridadTest` | RLS en todas las tablas, funciones seguras y ninguna clave secreta en el código |
 
 En GitHub, cada cambio corre las pruebas, el análisis de Android y crea el APK (`.github/workflows/android.yml`).
@@ -103,4 +104,6 @@ En GitHub, cada cambio corre las pruebas, el análisis de Android y crea el APK 
 | Nueva cápsula | `CreateCapsuleScreen.kt` (estado y borrador automático) + `CreateCapsuleSections.kt` (título, carta, notas de voz, canción, preguntas, fotos, fecha, clave, lugar, compartir) |
 | Reglas de una cápsula nueva | `data/NuevaCapsula.kt` (validación y límites, con pruebas) |
 | Ver una cápsula | `CapsuleDetailScreen.kt` + `CapsuleLocked.kt` (cerrada) + `CapsuleOpen.kt` (abierta) + `MediaViewer.kt` + `SharePanel.kt` |
+| Extras de una cápsula | `CapsuleExtras.kt` (canción y notas de voz) + `CapsuleQuestions.kt` + `CapsuleSocial.kt` (reacciones, comentarios, cartas) + `CapsuleTogether.kt` (aportar, abrir juntos, rutas) + `CapsuleInvite.kt` + `HotColdFinder.kt` |
+| Textos de las notificaciones | `notify/Avisos.kt` (con pruebas) |
 | Caliente o frío | `util/Pistas.kt` |
