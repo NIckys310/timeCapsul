@@ -1,5 +1,6 @@
 package com.timecapsule.app.data
 
+import com.timecapsule.app.ui.tr
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -166,7 +167,7 @@ data class PickedItem(val uri: android.net.Uri, val kind: String)
 
 /** Plantillas de carta: cada una trae un inicio que la persona completa. */
 object LetterTemplates {
-    val all = listOf(
+    private val cartas = listOf(
         "futuro" to ("Mi yo del futuro" to """Querido yo del futuro:
 
 Hoy es un día como cualquiera y quiero contarte cómo me siento…
@@ -212,10 +213,14 @@ Estamos en… y lo que más me sorprendió fue…
 Prometo volver para…
 """),
     )
-    val questions = listOf(
+    val all get() = cartas.map { (id, par) -> id to (tr(par.first) to tr(par.second)) }
+
+    private val preguntas = listOf(
         "¿Sigues viviendo en el mismo lugar?", "¿Cumpliste el sueño que tenías hoy?", "¿Quiénes siguen siendo tus mejores amigos?",
         "¿Qué canción te gusta ahora?", "¿Qué le dirías a tu yo de hoy?", "¿Sigues estudiando o trabajando en lo mismo?",
     )
+
+    val questions get() = preguntas.map { tr(it) }
 }
 
 /* ---------- Álbum animado (textos de la IA) ---------- */
