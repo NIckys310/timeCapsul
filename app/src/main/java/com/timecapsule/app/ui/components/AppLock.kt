@@ -15,7 +15,7 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import com.timecapsule.app.ui.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,8 +44,8 @@ fun askUnlock(activity: FragmentActivity, onOk: () -> Unit, onFail: (String) -> 
     })
     prompt.authenticate(
         BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Desbloquear Time Capsule")
-            .setSubtitle("Usa tu huella, tu rostro o el PIN del celular")
+            .setTitle(com.timecapsule.app.ui.tr("Desbloquear Time Capsule"))
+            .setSubtitle(com.timecapsule.app.ui.tr("Usa tu huella, tu rostro o el PIN del celular"))
             .setAllowedAuthenticators(BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
             .build()
     )

@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.timecapsule.app.R
 import com.timecapsule.app.ui.MainActivity
+import com.timecapsule.app.ui.tr
 
 object Notifier {
     const val CH_UNLOCK = "unlock_v2"
@@ -28,13 +29,13 @@ object Notifier {
     fun createChannels(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         listOf("unlock", "place").forEach { runCatching { nm.deleteNotificationChannel(it) } }
-        nm.createNotificationChannel(NotificationChannel(CH_UNLOCK, "Cápsulas que se abren", NotificationManager.IMPORTANCE_HIGH)
+        nm.createNotificationChannel(NotificationChannel(CH_UNLOCK, tr("Cápsulas que se abren"), NotificationManager.IMPORTANCE_HIGH)
             .apply { enableVibration(true); vibrationPattern = PATTERN })
-        nm.createNotificationChannel(NotificationChannel(CH_PLACE, "Recuerdos de lugares", NotificationManager.IMPORTANCE_HIGH)
+        nm.createNotificationChannel(NotificationChannel(CH_PLACE, tr("Recuerdos de lugares"), NotificationManager.IMPORTANCE_HIGH)
             .apply { enableVibration(true); vibrationPattern = PATTERN })
-        nm.createNotificationChannel(NotificationChannel(CH_SHARE, "Cápsulas compartidas", NotificationManager.IMPORTANCE_DEFAULT))
-        nm.createNotificationChannel(NotificationChannel(CH_ACTIVITY, "Reacciones y comentarios", NotificationManager.IMPORTANCE_DEFAULT))
-        nm.createNotificationChannel(NotificationChannel(CH_REMINDER, "Cuenta regresiva", NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CH_SHARE, tr("Cápsulas compartidas"), NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CH_ACTIVITY, tr("Reacciones y comentarios"), NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CH_REMINDER, tr("Cuenta regresiva"), NotificationManager.IMPORTANCE_DEFAULT))
     }
 
     fun canNotify(ctx: Context) = Build.VERSION.SDK_INT < 33 ||
@@ -51,9 +52,9 @@ object Notifier {
         val n = NotificationCompat.Builder(ctx, channel)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFFA63D2F.toInt())
-            .setContentTitle(title)
-            .setContentText(text)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentTitle(tr(title))
+            .setContentText(tr(text))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(tr(text)))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pi)
