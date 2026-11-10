@@ -40,7 +40,8 @@ import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import com.timecapsule.app.ui.Text
+import com.timecapsule.app.ui.TextoPropio
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -106,7 +107,7 @@ fun CapsuleCard(c: Capsule, me: String?, index: Int = 0, onClick: () -> Unit) {
             }
         }
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(c.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            TextoPropio(c.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
                 c.conditionText(),
                 color = if (c.isOpen) Olive else Wax,

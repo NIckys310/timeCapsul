@@ -25,7 +25,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.Text
+import com.timecapsule.app.ui.Text
+import com.timecapsule.app.ui.TextoPropio
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -181,7 +182,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Meta(Icons.Filled.Place, c.placeName ?: "Lugar sin nombre", Gold)
-                Text(c.title, style = MaterialTheme.typography.titleLarge, color = Cream)
+                TextoPropio(c.title, style = MaterialTheme.typography.titleLarge, color = Cream)
                 Text("Guardada el ${c.createdInstant.fmtDate()} · %.5f, %.5f".format(c.lat, c.lng), color = Muted, style = MaterialTheme.typography.bodySmall)
                 Text(c.conditionText(), color = if (c.isOpen) MaterialTheme.colorScheme.primary else Gold)
                 if (samePlace > 1) Text("Tienes $samePlace cápsulas en este lugar.", color = Muted)

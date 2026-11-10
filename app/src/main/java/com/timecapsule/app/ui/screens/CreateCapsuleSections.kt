@@ -58,7 +58,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import com.timecapsule.app.ui.Text
+import com.timecapsule.app.ui.TextoPropio
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
@@ -382,7 +383,7 @@ internal fun SeccionLugar(
     Meta(Icons.Filled.Route, "Ruta de cápsulas (se abren en orden)", Cream)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(selected = rutaId == null, onClick = { onRuta(null) }, label = { Text("Ninguna") })
-        rutas.forEach { r -> FilterChip(selected = rutaId == r.id, onClick = { onRuta(r.id) }, label = { Text(r.title) }) }
+        rutas.forEach { r -> FilterChip(selected = rutaId == r.id, onClick = { onRuta(r.id) }, label = { TextoPropio(r.title) }) }
     }
     OutlinedTextField(nuevaRuta, { nuevaRuta = it }, label = { Text("Crear una ruta nueva") }, singleLine = true,
         keyboardOptions = tecladoTexto, modifier = Modifier.fillMaxWidth(),

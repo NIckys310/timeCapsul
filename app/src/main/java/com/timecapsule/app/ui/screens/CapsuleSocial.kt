@@ -47,7 +47,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import com.timecapsule.app.ui.Text
+import com.timecapsule.app.ui.TextoPropio
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -171,7 +172,7 @@ fun ContributorLetters(c: Capsule) {
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(p.letter).padding(18.dp)) {
             Text("Carta de ${l.userName ?: "alguien"}", fontFamily = Typewriter, style = MaterialTheme.typography.labelLarge, color = androidx.compose.ui.graphics.Color(0xFF7A5C3A))
             Spacer(Modifier.height(6.dp))
-            Text(l.body, color = p.letterInk)
+            TextoPropio(l.body, color = p.letterInk)
         }
     }
 }

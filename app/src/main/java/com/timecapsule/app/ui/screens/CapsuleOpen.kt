@@ -44,7 +44,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import com.timecapsule.app.ui.Text
+import com.timecapsule.app.ui.TextoPropio
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -177,7 +178,7 @@ internal fun OpenContent(c: Capsule, media: List<Media>, onView: (Media) -> Unit
                     if (speaking) { Speech.stop(); speaking = false } else { Speech.speak(ctx, c.letter); speaking = true }
                 }) { Icon(if (speaking) Icons.Filled.Stop else Icons.AutoMirrored.Filled.VolumeUp, if (speaking) "Detener lectura" else "Leer en voz alta", tint = Color(0xFF7A5C3A)) }
             }
-            Text(c.letter, color = LetterInk, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.75f))
+            TextoPropio(c.letter, color = LetterInk, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.75f))
         }
     }
 

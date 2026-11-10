@@ -44,7 +44,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import com.timecapsule.app.ui.Text
+import com.timecapsule.app.ui.TextoPropio
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -166,7 +167,7 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
             Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(c.title, style = MaterialTheme.typography.headlineMedium)
+            TextoPropio(c.title, style = MaterialTheme.typography.headlineMedium)
             Text(
                 buildString {
                     append("Sellada el ${c.createdInstant.fmtDate()}")

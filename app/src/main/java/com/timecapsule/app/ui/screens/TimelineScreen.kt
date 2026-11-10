@@ -30,7 +30,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
+import com.timecapsule.app.ui.Text
+import com.timecapsule.app.ui.TextoPropio
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -127,7 +128,7 @@ private fun ChapterNode(ch: Chapter, caps: List<Capsule>, isLast: Boolean, onOpe
                             }
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(c.title, color = Cream, maxLines = 1)
+                                TextoPropio(c.title, color = Cream, maxLines = 1)
                                 Text(c.createdInstant.fmtDate() + (c.placeName?.let { " · $it" } ?: ""), color = Muted,
                                     style = MaterialTheme.typography.bodySmall, maxLines = 1)
                             }
