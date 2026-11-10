@@ -32,6 +32,10 @@ class IdiomaTest {
         assertEquals("muchos años", t.traducir("muchos años"))
     }
 
+    @Test fun `el icono se conserva y se traduce el nombre`() {
+        assertEquals("⚙️ Save", t.traducir("⚙️ Guardar"))
+    }
+
     @Test fun `una carta larga nunca se toca`() {
         val carta = "Carta de " + "mucho amor ".repeat(40)
         assertEquals(carta, t.traducir(carta))
