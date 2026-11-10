@@ -255,7 +255,8 @@ object Repo {
             c.doOutput = true
             c.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             c.setRequestProperty("Authorization", "Bearer $token")
-            c.outputStream.use { it.write(body.toString().toByteArray()) }
+            val conIdioma = kotlinx.serialization.json.JsonObject(body + ("idioma" to kotlinx.serialization.json.JsonPrimitive(com.timecapsule.app.ui.Idioma.codigo)))
+            c.outputStream.use { it.write(conIdioma.toString().toByteArray()) }
             val texto = (if (c.responseCode < 400) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
             val obj = runCatching { json.parseToJsonElement(texto).jsonObject }.getOrNull()
                 ?: error(if (c.responseCode == 401 && texto.contains("Login")) "La IA está en mantenimiento. Intenta más tarde." else "La IA no respondió bien (${c.responseCode}).")
