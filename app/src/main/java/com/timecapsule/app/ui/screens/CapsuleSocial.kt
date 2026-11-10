@@ -156,7 +156,7 @@ fun CommentsCard(c: Capsule) {
                 val body = text.trim(); if (body.isEmpty()) return@IconButton
                 text = ""
                 scope.launch { runCatching { Repo.addComment(c.id, body) }; list = runCatching { Repo.comments(c.id) }.getOrDefault(list) }
-            }) { Icon(Icons.AutoMirrored.Filled.Send, "Enviar", tint = p.wax) }
+            }) { Icon(Icons.AutoMirrored.Filled.Send, com.timecapsule.app.ui.tr("Enviar"), tint = p.wax) }
         }
     }
 }

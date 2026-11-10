@@ -96,7 +96,7 @@ fun AuthScreen() {
             // Logo nuevo: el mismo del ícono (fondo madera + sobre con lacre)
             Box(Modifier.size(120.dp).floating(amplitude = 4.dp).clip(RoundedCornerShape(28.dp))) {
                 Image(painterResource(R.drawable.ic_launcher_background), null, Modifier.fillMaxSize())
-                Image(painterResource(R.drawable.ic_launcher_foreground_vintage), "Logo de Time Capsule",
+                Image(painterResource(R.drawable.ic_launcher_foreground_vintage), com.timecapsule.app.ui.tr("Logo de Time Capsule"),
                     Modifier.fillMaxSize().graphicsLayer { scaleX = 1.32f; scaleY = 1.32f })
             }
             WaxSeal(Modifier.offset(x = 14.dp, y = 14.dp), size = 46.dp, glow = true)

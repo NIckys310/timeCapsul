@@ -167,7 +167,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         if (selected == null) SmallFloatingActionButton(
             onClick = { if (hasLocation) goToMe() else perm.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(18.dp),
-        ) { Icon(Icons.Filled.MyLocation, "Mi ubicación") }
+        ) { Icon(Icons.Filled.MyLocation, com.timecapsule.app.ui.tr("Mi ubicación")) }
 
         // Tarjeta del lugar seleccionado
         selected?.let { c ->

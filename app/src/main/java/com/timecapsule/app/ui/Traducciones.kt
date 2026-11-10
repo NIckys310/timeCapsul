@@ -149,6 +149,7 @@ internal val TRADUCCIONES: Map<String, String> = mapOf(
     "Contraseña" to "Password",
     "Crear mi cuenta" to "Create my account",
     "Entrar" to "Sign in",
+    "— o —" to "— or —",
     "Continuar con Google" to "Continue with Google",
     "¿No tienes cuenta? Crea una" to "No account? Create one",
     "¿Ya tienes cuenta? Inicia sesión" to "Already have an account? Sign in",

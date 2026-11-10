@@ -78,7 +78,7 @@ fun VoiceNotePlayer(source: String?, label: String, onDelete: (() -> Unit)? = nu
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = { player?.let { if (it.isPlaying) it.pause() else it.play() } }, enabled = player != null) {
-            Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (playing) "Pausar" else "Escuchar", tint = p.wax)
+            Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, com.timecapsule.app.ui.tr(if (playing) "Pausar" else "Escuchar"), tint = p.wax)
         }
         androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -90,6 +90,6 @@ fun VoiceNotePlayer(source: String?, label: String, onDelete: (() -> Unit)? = nu
             LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = p.wax, trackColor = p.raised)
         }
         Spacer(Modifier.width(4.dp))
-        if (onDelete != null) IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, "Quitar nota", tint = p.muted) }
+        if (onDelete != null) IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, com.timecapsule.app.ui.tr("Quitar nota"), tint = p.muted) }
     }
 }

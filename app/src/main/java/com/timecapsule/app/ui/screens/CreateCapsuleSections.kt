@@ -251,7 +251,7 @@ internal fun SeccionPreguntas(preguntas: List<String>, onQuitar: (Int) -> Unit, 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.QuestionAnswer, null, tint = Gold, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp)); Text(q, Modifier.weight(1f))
-            IconButton(onClick = { onQuitar(i) }) { Icon(Icons.Filled.Close, "Quitar pregunta") }
+            IconButton(onClick = { onQuitar(i) }) { Icon(Icons.Filled.Close, com.timecapsule.app.ui.tr("Quitar pregunta")) }
         }
     }
     if (preguntas.size < ReglasCapsula.MAX_PREGUNTAS) {
@@ -262,7 +262,7 @@ internal fun SeccionPreguntas(preguntas: List<String>, onQuitar: (Int) -> Unit, 
         }
         OutlinedTextField(nueva, { nueva = it }, label = { Text("Escribe tu propia pregunta") }, singleLine = true,
             keyboardOptions = tecladoTexto, modifier = Modifier.fillMaxWidth(),
-            trailingIcon = { IconButton(onClick = { if (nueva.isNotBlank()) { onAgregar(nueva); nueva = "" } }) { Icon(Icons.Filled.Add, "Agregar") } })
+            trailingIcon = { IconButton(onClick = { if (nueva.isNotBlank()) { onAgregar(nueva); nueva = "" } }) { Icon(Icons.Filled.Add, com.timecapsule.app.ui.tr("Agregar")) } })
     }
     Ayuda("Las responderás cuando la cápsula se abra.")
 }
@@ -279,10 +279,10 @@ internal fun SeccionMedios(medios: List<PickedItem>, onGaleria: () -> Unit, onCa
         itemsIndexed(medios, key = { _, m -> m.uri.toString() }) { i, m ->
             Box(Modifier.size(92.dp).clip(RoundedCornerShape(6.dp)).background(NightRaised)) {
                 if (m.kind == "photo") AsyncImage(m.uri, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                else Icon(Icons.Filled.Videocam, "Video", tint = Gold, modifier = Modifier.align(Alignment.Center).size(36.dp))
+                else Icon(Icons.Filled.Videocam, com.timecapsule.app.ui.tr("Video"), tint = Gold, modifier = Modifier.align(Alignment.Center).size(36.dp))
                 IconButton(onClick = { onQuitar(i) },
                     modifier = Modifier.align(Alignment.TopEnd).size(28.dp).padding(3.dp).clip(CircleShape).background(Night)) {
-                    Icon(Icons.Filled.Close, "Quitar", modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Close, com.timecapsule.app.ui.tr("Quitar"), modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -321,7 +321,7 @@ internal fun SeccionClave(
     val vt = if (verClave) VisualTransformation.None else PasswordVisualTransformation()
     val ojo = @Composable {
         IconButton(onClick = { verClave = !verClave }) {
-            Icon(if (verClave) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, if (verClave) "Ocultar" else "Mostrar")
+            Icon(if (verClave) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, com.timecapsule.app.ui.tr(if (verClave) "Ocultar" else "Mostrar"))
         }
     }
     OutlinedTextField(clave, onClave, label = { Text("Clave") }, singleLine = true,
@@ -387,7 +387,7 @@ internal fun SeccionLugar(
     }
     OutlinedTextField(nuevaRuta, { nuevaRuta = it }, label = { Text("Crear una ruta nueva") }, singleLine = true,
         keyboardOptions = tecladoTexto, modifier = Modifier.fillMaxWidth(),
-        trailingIcon = { IconButton(onClick = { if (nuevaRuta.isNotBlank()) { onCrearRuta(nuevaRuta); nuevaRuta = "" } }) { Icon(Icons.Filled.Add, "Crear ruta") } })
+        trailingIcon = { IconButton(onClick = { if (nuevaRuta.isNotBlank()) { onCrearRuta(nuevaRuta); nuevaRuta = "" } }) { Icon(Icons.Filled.Add, com.timecapsule.app.ui.tr("Crear ruta")) } })
     if (rutaId != null) Ayuda("Esta cápsula solo se abrirá cuando la anterior de la ruta esté abierta.")
 }
 

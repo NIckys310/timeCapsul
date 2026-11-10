@@ -148,9 +148,9 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") } },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, com.timecapsule.app.ui.tr("Volver")) } },
                 actions = {
-                    if (capsule?.owner == me && capsule != null) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, "Eliminar") }
+                    if (capsule?.owner == me && capsule != null) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, com.timecapsule.app.ui.tr("Eliminar")) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )

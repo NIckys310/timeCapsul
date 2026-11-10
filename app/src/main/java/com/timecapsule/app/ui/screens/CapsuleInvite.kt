@@ -121,7 +121,7 @@ fun InviteButton(capsuleId: String) {
                 } else {
                     val link = "timecapsule://invitar/$c"
                     val bmp = remember(link) { qrBitmap(link, 640) }
-                    Image(bmp.asImageBitmap(), "Código QR", Modifier.size(220.dp).background(androidx.compose.ui.graphics.Color.White).padding(8.dp))
+                    Image(bmp.asImageBitmap(), com.timecapsule.app.ui.tr("Código QR"), Modifier.size(220.dp).background(androidx.compose.ui.graphics.Color.White).padding(8.dp))
                     Text(c, fontFamily = Typewriter, fontSize = 28.sp, letterSpacing = 4.sp)
                     Text("Escanéalo con la cámara de otro celular que tenga Time Capsule, o compártelo: en la app se escribe en “Unirme con código”. Vence en 7 días.",
                         color = LocalPalette.current.muted, style = MaterialTheme.typography.bodySmall)

@@ -353,7 +353,7 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text("Nueva cápsula") },
-                navigationIcon = { IconButton(onClick = onBack, enabled = !saving) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") } },
+                navigationIcon = { IconButton(onClick = onBack, enabled = !saving) { Icon(Icons.AutoMirrored.Filled.ArrowBack, com.timecapsule.app.ui.tr("Volver")) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },

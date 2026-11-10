@@ -176,7 +176,7 @@ internal fun OpenContent(c: Capsule, media: List<Media>, onView: (Media) -> Unit
                 Text("Carta", color = Color(0xFF7A5C3A), fontFamily = Typewriter, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
                 IconButton(onClick = {
                     if (speaking) { Speech.stop(); speaking = false } else { Speech.speak(ctx, c.letter); speaking = true }
-                }) { Icon(if (speaking) Icons.Filled.Stop else Icons.AutoMirrored.Filled.VolumeUp, if (speaking) "Detener lectura" else "Leer en voz alta", tint = Color(0xFF7A5C3A)) }
+                }) { Icon(if (speaking) Icons.Filled.Stop else Icons.AutoMirrored.Filled.VolumeUp, com.timecapsule.app.ui.tr(if (speaking) "Detener lectura" else "Leer en voz alta"), tint = Color(0xFF7A5C3A)) }
             }
             TextoPropio(c.letter, color = LetterInk, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.75f))
         }
@@ -191,7 +191,7 @@ internal fun OpenContent(c: Capsule, media: List<Media>, onView: (Media) -> Unit
                     val tilt = listOf(-3f, 2.5f, 1.5f, -2f)[(r * 2 + i) % 4]
                     Polaroid(Modifier.weight(1f).clickable { onView(m) }, rotation = tilt) {
                         if (m.kind == "photo") CloudImage(m.path, Modifier.fillMaxSize())
-                        else Icon(Icons.Filled.PlayCircle, "Video", tint = Gold, modifier = Modifier.align(Alignment.Center).size(44.dp))
+                        else Icon(Icons.Filled.PlayCircle, com.timecapsule.app.ui.tr("Video"), tint = Gold, modifier = Modifier.align(Alignment.Center).size(44.dp))
                     }
                 }
                 repeat(2 - row.size) { Spacer(Modifier.weight(1f)) }

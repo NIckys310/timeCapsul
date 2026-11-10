@@ -156,7 +156,7 @@ private fun JoinWithCode(vm: MainViewModel, onOpen: (String) -> Unit) {
     var open by remember { androidx.compose.runtime.mutableStateOf(false) }
     var code by remember { androidx.compose.runtime.mutableStateOf("") }
     var err by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
-    androidx.compose.material3.IconButton(onClick = { open = true }) { Icon(Icons.Filled.GroupAdd, "Unirme con código") }
+    androidx.compose.material3.IconButton(onClick = { open = true }) { Icon(Icons.Filled.GroupAdd, com.timecapsule.app.ui.tr("Unirme con código")) }
     if (open) androidx.compose.material3.AlertDialog(
         onDismissRequest = { open = false },
         title = { Text("Unirme con código") },

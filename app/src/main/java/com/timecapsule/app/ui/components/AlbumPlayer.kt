@@ -93,7 +93,7 @@ fun AlbumPlayer(c: Capsule, photoPaths: List<String>, onClose: () -> Unit) {
             Row(Modifier.align(Alignment.TopCenter).padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 repeat(n + 2) { i -> Box(Modifier.size(width = 18.dp, height = 3.dp).clip(CircleShape).background(if (i <= step + 1) p.gold else Color.White.copy(alpha = 0.3f))) }
             }
-            IconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) { Icon(Icons.Filled.Close, "Cerrar", tint = Color.White) }
+            IconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) { Icon(Icons.Filled.Close, com.timecapsule.app.ui.tr("Cerrar"), tint = Color.White) }
             if (!c.songUrl.isNullOrBlank() || !c.songTitle.isNullOrBlank()) TextButton(
                 onClick = {
                     val url = c.songUrl?.takeIf { it.startsWith("http") } ?: "https://www.youtube.com/results?search_query=" + android.net.Uri.encode(c.songTitle.orEmpty())

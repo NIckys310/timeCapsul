@@ -132,7 +132,7 @@ internal fun MediaViewer(m: Media, onClose: () -> Unit) {
                 else -> VideoPlayer(u)
             }
             IconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)) {
-                Icon(Icons.Filled.Close, "Cerrar", tint = Color.White)
+                Icon(Icons.Filled.Close, com.timecapsule.app.ui.tr("Cerrar"), tint = Color.White)
             }
         }
     }
