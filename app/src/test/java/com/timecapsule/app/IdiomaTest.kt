@@ -32,6 +32,10 @@ class IdiomaTest {
         assertEquals("muchos años", t.traducir("muchos años"))
     }
 
+    @Test fun `tambien traduce textos de una sola letra`() {
+        assertEquals("— or —", Traductor(TRADUCCIONES).traducir("— o —"))
+    }
+
     @Test fun `el icono se conserva y se traduce el nombre`() {
         assertEquals("⚙️ Save", t.traducir("⚙️ Guardar"))
     }

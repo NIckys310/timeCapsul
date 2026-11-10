@@ -41,7 +41,7 @@ internal class Traductor(dic: Map<String, String>) {
 
     @Synchronized
     fun traducir(texto: String): String {
-        if (texto.count { it.isLetter() } < 2) return texto
+        if (texto.none { it.isLetter() }) return texto
         memoria[texto]?.let { return it }
         val limpio = texto.trim()
         val hecho = buscar(limpio, 0)
