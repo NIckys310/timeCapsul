@@ -1,6 +1,8 @@
 package com.timecapsule.app.util
 
 import com.timecapsule.app.data.Capsule
+import com.timecapsule.app.ui.Idioma
+import com.timecapsule.app.ui.tr
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -8,9 +10,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val es = Locale("es", "CO")
-private val dateFmt = DateTimeFormatter.ofPattern("d MMM yyyy", es)
-private val dateTimeFmt = DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", es)
-private val monthFmt = DateTimeFormatter.ofPattern("MMMM yyyy", es)
+private val ingles get() = Idioma.codigo == "en"
+private val local: Locale get() = if (ingles) Locale.ENGLISH else es
+private val dateFmt get() = DateTimeFormatter.ofPattern(if (ingles) "MMM d, yyyy" else "d MMM yyyy", local)
+private val dateTimeFmt get() = DateTimeFormatter.ofPattern(if (ingles) "MMM d, yyyy, h:mm a" else "d MMM yyyy, h:mm a", local)
+private val monthFmt get() = DateTimeFormatter.ofPattern("MMMM yyyy", local)
 
 fun Instant.fmtDate(): String = atZone(ZoneId.systemDefault()).format(dateFmt)
 fun Instant.fmtDateTime(): String = atZone(ZoneId.systemDefault()).format(dateTimeFmt)
@@ -37,5 +41,5 @@ fun Capsule.conditionText(): String {
     unlockInstant?.let { if (!dateReady) parts += "Se abre el ${it.fmtDate()} (faltan ${humanUntil(it)})" }
     if (requirePlace) parts += if (dateReady) "Ve a ${placeName ?: "su lugar"} para abrirla" else "y estando en ${placeName ?: "su lugar"}"
     if (hasKey) parts += "· o con tu clave"
-    return parts.joinToString(" ").ifBlank { "Cerrada" }
+    return parts.joinToString(" ") { tr(it) }.ifBlank { "Cerrada" }
 }
