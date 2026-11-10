@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import ia from '../netlify/functions/ia.mjs';
-import { itemsDeLinea, promptLinea, promptCarta, promptSugerir, promptResumen, tonoValido, ventanaHaceUnAno, ACCIONES } from '../netlify/lib/acciones.mjs';
+import { itemsDeLinea, promptLinea, promptCarta, promptSugerir, promptResumen, tonoValido, ventanaHaceUnAno, ACCIONES, enIdioma } from '../netlify/lib/acciones.mjs';
 import { extraerJson } from '../netlify/lib/claude.mjs';
 import { LIMITE_DIARIO } from '../netlify/lib/supabase.mjs';
 
@@ -136,4 +136,14 @@ test('hace un año = entre 380 y 350 días atrás', () => {
 test('extraerJson saca el objeto aunque venga con texto alrededor', () => {
   assert.deepEqual(extraerJson('Aquí está: {"a":1} ¡listo!'), { a: 1 });
   assert.throws(() => extraerJson('sin json'), /formato/);
+});
+
+test('en inglés se le pide a Claude responder en inglés; en español no cambia nada', () => {
+  assert.equal(enIdioma('hola', 'es'), 'hola');
+  assert.equal(enIdioma('hola', undefined), 'hola');
+  assert.match(enIdioma('hola', 'en'), /en inglés/);
+  const bloques = [{ type: 'image' }, { type: 'text', text: 'carta' }];
+  const hecho = enIdioma(bloques, 'en');
+  assert.deepEqual(hecho[0], { type: 'image' });
+  assert.match(hecho[1].text, /^carta[\s\S]*en inglés/);
 });

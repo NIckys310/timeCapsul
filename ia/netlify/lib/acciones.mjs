@@ -78,7 +78,16 @@ async function fotosDe(id, token, max) {
   return { media, fotos, bloques };
 }
 
+/** Si la app está en inglés, se le pide a Claude que responda en inglés. */
+export function enIdioma(contenido, idioma) {
+  if (idioma !== 'en') return contenido;
+  const nota = '\n\nIMPORTANTE: la persona usa la app en inglés. Escribe en inglés todos los textos de tu respuesta (conserva las claves del JSON).';
+  if (typeof contenido === 'string') return contenido + nota;
+  return contenido.map((b, i) => (i === contenido.length - 1 && b.type === 'text' ? { ...b, text: b.text + nota } : b));
+}
+
 export async function ejecutar(accion, cuerpo, usuario, token) {
+  const pregunta = (contenido, max) => preguntar(enIdioma(contenido, cuerpo.idioma), max);
   switch (accion) {
     case 'summary': {
       const c = await capsula(cuerpo.capsule_id, token);
@@ -86,22 +95,22 @@ export async function ejecutar(accion, cuerpo, usuario, token) {
       if (!c.is_open) return [403, { error: 'La cápsula todavía está cerrada' }];
       const { media, bloques } = await fotosDe(c.id, token, 4);
       const videos = media.filter((m) => m.kind === 'video').length;
-      const summary = (await preguntar([...bloques, { type: 'text', text: promptResumen(c, bloques.length, videos) }], 600)).trim();
+      const summary = (await pregunta([...bloques, { type: 'text', text: promptResumen(c, bloques.length, videos) }], 600)).trim();
       if (c.owner === usuario.id) await escribir(`capsules?id=eq.${encodeURIComponent(c.id)}`, token, 'PATCH', { ai_summary: summary });
       return [200, { summary }];
     }
     case 'timeline': {
       const caps = await leer('capsules_feed?select=id,title,letter,created_at,unlock_at,place_name,lat,lng,is_open,ai_summary,media_count,owner_name&order=created_at', token);
       if (!caps.length) return [200, { resumen: 'Aún no tienes cápsulas.', capitulos: [], lugares: [] }];
-      return [200, extraerJson(await preguntar(promptLinea(itemsDeLinea(caps)), 3000))];
+      return [200, extraerJson(await pregunta(promptLinea(itemsDeLinea(caps)), 3000))];
     }
     case 'suggest': {
       const imgs = (Array.isArray(cuerpo.images) ? cuerpo.images : []).filter((x) => typeof x === 'string' && x.length < 1_500_000).slice(0, 3);
       const contenido = [...imgs.map(imagen), { type: 'text', text: promptSugerir(imgs.length, cuerpo.place, cuerpo.letter) }];
-      return [200, extraerJson(await preguntar(contenido, 400))];
+      return [200, extraerJson(await pregunta(contenido, 400))];
     }
     case 'letter': {
-      const carta = await preguntar(promptCarta(cuerpo.letter, cuerpo.title, tonoValido(cuerpo.tono)), 1200);
+      const carta = await pregunta(promptCarta(cuerpo.letter, cuerpo.title, tonoValido(cuerpo.tono)), 1200);
       return [200, { carta: carta.trim() }];
     }
     case 'year_ago': {
@@ -109,13 +118,13 @@ export async function ejecutar(accion, cuerpo, usuario, token) {
       const caps = await leer(`capsules_feed?select=id,title,letter,ai_summary,place_name,created_at,is_open&created_at=gte.${encodeURIComponent(desde)}&created_at=lte.${encodeURIComponent(hasta)}&is_open=eq.true&limit=3`, token);
       if (!caps.length) return [200, { mensaje: null }];
       const c = caps[0];
-      return [200, { mensaje: (await preguntar(promptHaceUnAno(c), 200)).trim(), capsule_id: c.id, titulo: c.title }];
+      return [200, { mensaje: (await pregunta(promptHaceUnAno(c), 200)).trim(), capsule_id: c.id, titulo: c.title }];
     }
     case 'album': {
       const c = await capsula(cuerpo.capsule_id, token);
       if (!c?.is_open) return [403, { error: 'La cápsula todavía está cerrada' }];
       const { fotos, bloques } = await fotosDe(c.id, token, 8);
-      const out = extraerJson(await preguntar([...bloques, { type: 'text', text: promptAlbum(c, bloques.length) }], 1200));
+      const out = extraerJson(await pregunta([...bloques, { type: 'text', text: promptAlbum(c, bloques.length) }], 1200));
       return [200, { ...out, paths: fotos.map((f) => f.path) }];
     }
     default:
