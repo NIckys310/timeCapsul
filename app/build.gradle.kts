@@ -13,8 +13,8 @@ android {
         applicationId = "com.timecapsule.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "2.9"
+        versionCode = 12
+        versionName = "3.0"
     }
 
     // Una sola llave para TODOS los APK (los de este PC y los de GitHub):
