@@ -1,14 +1,18 @@
 # =========================================================
 # Mantiene despiertos los proyectos gratis de Supabase.
-# Supabase pausa los proyectos gratis tras 7 días sin uso;
-# esta tarea los consulta cada 3 días para que eso no pase.
+# Supabase pausa los proyectos gratis tras 7 días sin consultas
+# a la base de datos. Esta tarea hace una consulta REAL cada día:
+#  - Time Capsule: la función ping() (supabase/5_despertador.sql)
+#  - Guardián: la tabla pública de especies
+# Un 401 NO sirve: lo responde la puerta de entrada y la base de
+# datos nunca se entera (así se pausó Time Capsule en noviembre).
 # Usa solo las claves "publishable" (públicas).
 # =========================================================
 name: Mantener Supabase despierto
 
 on:
   schedule:
-    - cron: "17 13 */3 * *"   # cada 3 días, 8:17 a. m. en Colombia
+    - cron: "17 13 * * *"     # todos los días, 8:17 a. m. en Colombia
   workflow_dispatch: {}        # también se puede correr a mano en la pestaña Actions
 
 jobs:
@@ -17,12 +21,16 @@ jobs:
     steps:
       - name: Consultar los proyectos
         run: |
-          # Cualquier respuesta de la base (200 o 401) cuenta como actividad.
-          # Solo falla si el proyecto no responde o ya está pausado.
+          fallo=0
           check () {
-            code=$(curl -s -o /dev/null -w "%{http_code}" "$2" -H "apikey: $3")
+            code=$(curl -s -o /dev/null -w "%{http_code}" -X "$2" "$3" -H "apikey: $4" -H "Content-Type: application/json" ${5:+-d "$5"} || true)
             echo "$1: $code"
-            case "$code" in 2*|401|403|404) ;; *) echo "::error::$1 no respondió ($code). Entra a Supabase y toca Restore."; exit 1;; esac
+            case "$code" in
+              2*) ;;
+              000) echo "::error::$1 está en PAUSA (su dirección no existe). Entra a supabase.com, abre el proyecto y toca Restore."; fallo=1;;
+              *) echo "::error::$1 respondió $code: la consulta no llegó a la base de datos."; fallo=1;;
+            esac
           }
-          check "Time Capsule" "https://frascwpukyygsaeeohnr.supabase.co/rest/v1/capsules_feed?select=id&limit=1" "sb_publishable_HlD6zjfxofaUGFguDr5yNQ_7K5CVBPY"
-          check "Guardián" "https://jktmtdpgvjlrdxqmdbrp.supabase.co/rest/v1/species?select=id&limit=1" "sb_publishable_Z33OvW2c8XZvI7G9AbgrRA_N4yqqYwi"
+          check "Time Capsule" POST "https://frascwpukyygsaeeohnr.supabase.co/rest/v1/rpc/ping" "sb_publishable_HlD6zjfxofaUGFguDr5yNQ_7K5CVBPY" "{}"
+          check "Guardián" GET "https://jktmtdpgvjlrdxqmdbrp.supabase.co/rest/v1/species?select=id&limit=1" "sb_publishable_Z33OvW2c8XZvI7G9AbgrRA_N4yqqYwi"
+          exit $fallo
