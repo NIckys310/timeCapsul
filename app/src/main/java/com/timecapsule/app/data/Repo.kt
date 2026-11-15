@@ -300,7 +300,7 @@ object Repo {
             m.contains("Invalid login credentials", true) -> "Correo o contraseña incorrectos."
             m.contains("Email not confirmed", true) -> "Confirma tu correo con el enlace que te enviamos."
             m.contains("already registered", true) -> "Ese correo ya tiene una cuenta. Inicia sesión."
-            m.contains("Password should be", true) -> "La contraseña debe tener al menos 6 caracteres."
+            m.contains("Password should be", true) -> "La contraseña no es segura: usa al menos 10 caracteres con mayúscula, minúscula, número y símbolo."
             m.contains("Unable to resolve host", true) || m.contains("timeout", true) -> "Sin conexión a internet."
             m.contains("Payload too large", true) || m.contains("exceeded the maximum", true) -> "Un archivo supera el límite de 50 MB."
             m.contains("Máximo", true) -> "Máximo" + m.substringAfter("Máximo").lineSequence().first()

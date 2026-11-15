@@ -14,7 +14,7 @@ class MensajesTest {
     @Test fun `contrasena incorrecta`() = assertEquals("Correo o contraseña incorrectos.", msg("Invalid login credentials"))
     @Test fun `correo sin confirmar`() = assertEquals("Confirma tu correo con el enlace que te enviamos.", msg("Email not confirmed"))
     @Test fun `correo ya registrado`() = assertEquals("Ese correo ya tiene una cuenta. Inicia sesión.", msg("User already registered"))
-    @Test fun `contrasena corta`() = assertEquals("La contraseña debe tener al menos 6 caracteres.", msg("Password should be at least 6 characters"))
+    @Test fun `contrasena corta`() = assertEquals("La contraseña no es segura: usa al menos 10 caracteres con mayúscula, minúscula, número y símbolo.", msg("Password should be at least 6 characters"))
     @Test fun `sin internet`() = assertEquals("Sin conexión a internet.", msg("Unable to resolve host \"x.supabase.co\""))
     @Test fun `archivo muy grande`() = assertEquals("Un archivo supera el límite de 50 MB.", msg("Payload too large"))
     @Test fun `demasiados intentos con la clave`() = assertEquals("Demasiados intentos. Espera 15 minutos para volver a probar.", msg("ERROR: Demasiados intentos"))

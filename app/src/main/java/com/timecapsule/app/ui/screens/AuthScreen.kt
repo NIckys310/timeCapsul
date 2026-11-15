@@ -30,6 +30,8 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import com.timecapsule.app.ui.Text
+import com.timecapsule.app.ui.tr
+import com.timecapsule.app.data.ReglasContrasena
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -72,8 +74,11 @@ fun AuthScreen() {
 
     fun submit() {
         msg = null
-        if (email.isBlank() || pass.length < 6 || (register && name.isBlank())) {
-            msg = "Completa los datos. La contraseña necesita al menos 6 caracteres."; return
+        if (email.isBlank() || pass.isBlank() || (register && name.isBlank())) {
+            msg = "Completa los datos."; return
+        }
+        if (register && !ReglasContrasena.esSegura(pass)) {
+            msg = "Tu contraseña aún no es segura. Mira lo que le falta."; return
         }
         busy = true
         scope.launch {
@@ -127,6 +132,17 @@ fun AuthScreen() {
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth())
+        if (register && pass.isNotEmpty()) {
+            // Lo que le falta a la contraseña, en vivo mientras se escribe
+            Spacer(Modifier.height(8.dp))
+            Column(Modifier.fillMaxWidth()) {
+                ReglasContrasena.reglas.forEach { r ->
+                    val ok = r.cumple(pass)
+                    Text((if (ok) "✓ " else "○ ") + tr(r.texto), color = if (ok) MaterialTheme.colorScheme.primary else Muted,
+                        style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
         msg?.let { Spacer(Modifier.height(12.dp)); Text(it, color = MaterialTheme.colorScheme.secondary, textAlign = TextAlign.Center) }
         Spacer(Modifier.height(20.dp))
         Button(onClick = ::submit, enabled = !busy, modifier = Modifier.fillMaxWidth().height(52.dp)) {
