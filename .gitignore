@@ -6,3 +6,6 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+# Llaves de firma: NUNCA en el repositorio
+*.jks
+*.keystore
