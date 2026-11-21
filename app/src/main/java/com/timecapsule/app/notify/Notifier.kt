@@ -1,5 +1,7 @@
 package com.timecapsule.app.notify
 
+import com.timecapsule.app.util.Fallos
+
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -28,7 +30,7 @@ object Notifier {
 
     fun createChannels(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
-        listOf("unlock", "place").forEach { runCatching { nm.deleteNotificationChannel(it) } }
+        listOf("unlock", "place").forEach { runCatching { nm.deleteNotificationChannel(it) }.onFailure { Fallos.registrar("Notifier:31", it) } }
         nm.createNotificationChannel(NotificationChannel(CH_UNLOCK, tr("Cápsulas que se abren"), NotificationManager.IMPORTANCE_HIGH)
             .apply { enableVibration(true); vibrationPattern = PATTERN })
         nm.createNotificationChannel(NotificationChannel(CH_PLACE, tr("Recuerdos de lugares"), NotificationManager.IMPORTANCE_HIGH)

@@ -1,5 +1,7 @@
 package com.timecapsule.app.ui.screens
 
+import com.timecapsule.app.util.Fallos
+
 import com.timecapsule.app.ui.components.paper
 import androidx.compose.ui.graphics.Color
 import android.Manifest
@@ -288,5 +290,5 @@ fun CreateCapsuleScreen(
 
 /** Abre YouTube o Spotify buscando la canción. */
 private fun openSearch(ctx: android.content.Context, base: String, q: String) {
-    runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, AUri.parse(base + AUri.encode(q.trim())))) }
+    runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, AUri.parse(base + AUri.encode(q.trim())))) }.onFailure { Fallos.registrar("CreateCapsuleScreen:291", it) }
 }

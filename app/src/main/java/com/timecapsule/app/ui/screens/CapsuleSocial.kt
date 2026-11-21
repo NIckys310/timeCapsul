@@ -1,5 +1,7 @@
 package com.timecapsule.app.ui.screens
 
+import com.timecapsule.app.util.Fallos
+
 import com.timecapsule.app.ui.components.goldBorder
 import com.timecapsule.app.ui.components.enterAnim
 import android.Manifest
@@ -118,7 +120,7 @@ fun ReactionsBar(c: Capsule) {
                     .clickable {
                         val new = if (mine == e) null else e
                         list = list.filter { it.userId != me } + listOfNotNull(new?.let { Reaction(me.orEmpty(), it) })
-                        scope.launch { runCatching { Repo.react(c.id, new) } }
+                        scope.launch { runCatching { Repo.react(c.id, new) }.onFailure { Fallos.registrar("CapsuleSocial:121", it) } }
                     }.padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -146,7 +148,7 @@ fun CommentsCard(c: Capsule) {
                     Text(runCatching { OffsetDateTime.parse(k.createdAt).toInstant().fmtDate() }.getOrDefault(""), fontFamily = Typewriter, style = MaterialTheme.typography.labelSmall, color = p.muted)
                 }
                 Text(k.body)
-                if (k.userId == me) TextButton(onClick = { scope.launch { runCatching { Repo.deleteComment(k.id) }; list = list - k } }) { Text("Borrar") }
+                if (k.userId == me) TextButton(onClick = { scope.launch { runCatching { Repo.deleteComment(k.id) }.onFailure { Fallos.registrar("CapsuleSocial:149", it) }; list = list - k } }) { Text("Borrar") }
             }
             HorizontalDivider(color = p.line)
         }
@@ -155,7 +157,7 @@ fun CommentsCard(c: Capsule) {
             IconButton(onClick = {
                 val body = text.trim(); if (body.isEmpty()) return@IconButton
                 text = ""
-                scope.launch { runCatching { Repo.addComment(c.id, body) }; list = runCatching { Repo.comments(c.id) }.getOrDefault(list) }
+                scope.launch { runCatching { Repo.addComment(c.id, body) }.onFailure { Fallos.registrar("CapsuleSocial:158", it) }; list = runCatching { Repo.comments(c.id) }.getOrDefault(list) }
             }) { Icon(Icons.AutoMirrored.Filled.Send, com.timecapsule.app.ui.tr("Enviar"), tint = p.wax) }
         }
     }

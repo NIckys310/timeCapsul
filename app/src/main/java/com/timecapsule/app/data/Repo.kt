@@ -295,6 +295,7 @@ object Repo {
 
     /** Convierte errores técnicos en mensajes claros. */
     fun friendly(e: Throwable): String {
+        com.timecapsule.app.util.Fallos.registrar("Repo", e)   // todo error que ve la persona queda registrado
         val m = e.message.orEmpty()
         return when {
             m.contains("Invalid login credentials", true) -> "Correo o contraseña incorrectos."

@@ -1,5 +1,7 @@
 package com.timecapsule.app.ui.components
 
+import com.timecapsule.app.util.Fallos
+
 import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
@@ -49,7 +51,7 @@ fun vibrateOpen(ctx: Context) {
     if (!AppSettings.look.value.vibrateOnOpen) return
     val v: Vibrator? = if (Build.VERSION.SDK_INT >= 31) (ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
     else @Suppress("DEPRECATION") (ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator)
-    runCatching { v?.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 60, 90, 80, 90, 180), intArrayOf(0, 120, 0, 180, 0, 255), -1)) }
+    runCatching { v?.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 60, 90, 80, 90, 180), intArrayOf(0, 120, 0, 180, 0, 255), -1)) }.onFailure { Fallos.registrar("OpeningCeremony:52", it) }
 }
 
 /**
