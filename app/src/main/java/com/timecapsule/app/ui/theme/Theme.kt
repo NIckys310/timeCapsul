@@ -41,14 +41,14 @@ data class Palette(
     val dark: Boolean,
 )
 
-private val DayPalette = Palette(
+internal val DayPalette = Palette(
     bg = Color(0xFFF2E8D5), surface = Color(0xFFFBF5E9), raised = Color(0xFFEFE2C8),
-    ink = Color(0xFF3B2E25), muted = Color(0xFF85725E), wax = Color(0xFFA63D2F), waxDark = Color(0xFF7A2A20),
-    gold = Color(0xFFB8893A), olive = Color(0xFF5F7A45), letter = Color(0xFFFFFBF2), letterInk = Color(0xFF2E241C),
+    ink = Color(0xFF3B2E25), muted = Color(0xFF6E5C49), wax = Color(0xFFA63D2F), waxDark = Color(0xFF7A2A20),
+    gold = Color(0xFF87621F), olive = Color(0xFF5F7A45), letter = Color(0xFFFFFBF2), letterInk = Color(0xFF2E241C),
     line = Color(0xFFDCCBAA), dark = false,
 )
 /* Noche: madera de nogal cálida, tinta crema y bordes dorados */
-private val NightPalette = Palette(
+internal val NightPalette = Palette(
     bg = Color(0xFF2E1E14), surface = Color(0xFF3D2918), raised = Color(0xFF4E351F),
     ink = Color(0xFFF7E8CC), muted = Color(0xFFD2B48A), wax = Color(0xFFE47A52), waxDark = Color(0xFFB8552F),
     gold = Color(0xFFF2C14E), olive = Color(0xFFB5CC72), letter = Color(0xFFF8ECD4), letterInk = Color(0xFF2E241C),
@@ -93,16 +93,16 @@ private val type = Typography(
     headlineMedium = TextStyle(fontFamily = serif, fontWeight = FontWeight.SemiBold, fontSize = 28.sp, lineHeight = 34.sp),
     headlineSmall = TextStyle(fontFamily = serif, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 28.sp),
     titleLarge = TextStyle(fontFamily = serif, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 26.sp),
-    labelSmall = TextStyle(fontFamily = Typewriter, fontSize = 11.sp, letterSpacing = 0.6.sp),
+    labelSmall = TextStyle(fontFamily = Typewriter, fontSize = 12.sp, letterSpacing = 0.6.sp),
 )
 
 private fun Palette.scheme() = if (dark) darkColorScheme(
-    primary = wax, onPrimary = Color(0xFFFFF4E8), secondary = gold, onSecondary = Color(0xFF2A1F00), tertiary = olive,
+    primary = wax, onPrimary = Color(0xFF2A1408), secondary = gold, onSecondary = Color(0xFF2A1F00), tertiary = olive,
     background = bg, onBackground = ink, surface = surface, onSurface = ink,
     surfaceVariant = raised, onSurfaceVariant = muted, surfaceContainer = surface, surfaceContainerHigh = raised,
     surfaceContainerHighest = raised, outline = line, error = Color(0xFFFF7A6B),
 ) else lightColorScheme(
-    primary = wax, onPrimary = Color(0xFFFFF4E8), secondary = gold, onSecondary = Color(0xFF2A1F00), tertiary = olive,
+    primary = wax, onPrimary = Color(0xFFFFF4E8), secondary = gold, onSecondary = Color(0xFFFFF8EC), tertiary = olive,
     background = bg, onBackground = ink, surface = surface, onSurface = ink,
     surfaceVariant = raised, onSurfaceVariant = muted, surfaceContainer = surface, surfaceContainerHigh = raised,
     surfaceContainerHighest = raised, outline = line, error = Color(0xFFB3261E),
