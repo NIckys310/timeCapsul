@@ -66,6 +66,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -139,213 +140,46 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
 /**
- * NUEVA CÁPSULA
- * Esta pantalla guarda lo que vas llenando (con borrador automático) y acomoda las
- * secciones de CreateCapsuleSections.kt. Las reglas están en data/NuevaCapsula.kt.
+ * NUEVA CÁPSULA · solo dibuja.
+ * El estado y la lógica viven en NuevaCapsulaViewModel (sobreviven a girar el celular);
+ * las secciones están en CreateCapsuleSections.kt y las reglas en data/NuevaCapsula.kt.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
+fun CreateCapsuleScreen(
+    onBack: () -> Unit,
+    onCreated: (String) -> Unit,
+    vm: NuevaCapsulaViewModel = viewModel(factory = NuevaCapsulaViewModel.Fabrica),
+) {
     val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
+    LaunchedEffect(vm.creada) { vm.creada?.let(onCreated) }
 
-    var title by remember { mutableStateOf("") }
-    var letter by remember { mutableStateOf("") }
-    val items = remember { mutableStateListOf<PickedItem>() }
-    var unlockAt by remember { mutableStateOf<Instant?>(ZonedDateTime.now().plusYears(1).toInstant()) }
-    var useDate by remember { mutableStateOf(true) }
-
-    // Clave para abrirla cuando quieras
-    var useKey by remember { mutableStateOf(false) }
-    var key by remember { mutableStateOf("") }
-    var key2 by remember { mutableStateOf("") }
-    var showKey by remember { mutableStateOf(false) }
-
-    // Lugar (se activa solo si das permiso de ubicación)
-    var usePlace by remember { mutableStateOf(true) }
-    var requirePlace by remember { mutableStateOf(false) }
-    var placeName by remember { mutableStateOf("") }
-    var address by remember { mutableStateOf<String?>(null) }
-    var nearby by remember { mutableStateOf<List<NearbyPlace>>(emptyList()) }
-    var lat by remember { mutableStateOf<Double?>(null) }
-    var lng by remember { mutableStateOf<Double?>(null) }
-    var accuracy by remember { mutableStateOf<Int?>(null) }
-    var locating by remember { mutableStateOf(false) }
-
-    var emails by remember { mutableStateOf("") }
-    var showDate by remember { mutableStateOf(false) }
-    var showTime by remember { mutableStateOf(false) }
-    var pickedDate by remember { mutableStateOf<LocalDate?>(null) }
-    var saving by remember { mutableStateOf(false) }
-    var progress by remember { mutableFloatStateOf(0f) }
-    var progressText by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var cameraUri by remember { mutableStateOf<Uri?>(null) }
-
-    // Actualización 3: plantilla, notas de voz, canción, preguntas, radio, abrir juntos, colaboradores y rutas
-    var template by remember { mutableStateOf<String?>(null) }
-    // IA: títulos sugeridos y ayuda con la carta
-    var aiBusy by remember { mutableStateOf<String?>(null) }
-    var titleIdeas by remember { mutableStateOf<List<String>>(emptyList()) }
-    var letterBefore by remember { mutableStateOf<String?>(null) }
-    fun suggestTitle() {
-        aiBusy = "titulo"; error = null
-        scope.launch {
-            runCatching {
-                val photos = items.filter { it.kind == "photo" }.take(3)
-                val imgs = photos.map { Base64.encodeToString(MediaUtil.compressPhoto(ctx, it.uri, 640), Base64.NO_WRAP) }
-                val (titles, cover) = Repo.aiSuggest(imgs, letter, placeName.ifBlank { null })
-                titleIdeas = titles
-                // La foto elegida como portada pasa al primer lugar
-                photos.getOrNull(cover)?.let { best -> items.remove(best); items.add(0, best) }
-            }.onFailure { error = Repo.friendly(it) }
-            aiBusy = null
-        }
-    }
-    fun helpLetter(tono: String) {
-        aiBusy = "carta"; error = null
-        scope.launch {
-            runCatching { Repo.aiLetter(letter, title, tono) }
-                .onSuccess { letterBefore = letter; letter = it }
-                .onFailure { error = Repo.friendly(it) }
-            aiBusy = null
-        }
-    }
-    val voiceNotes = remember { mutableStateListOf<File>() }
-    val recorder = remember { VoiceRecorder(ctx) }
-    var recording by remember { mutableStateOf(false) }
-    var recMs by remember { mutableLongStateOf(0L) }
-    var songTitle by remember { mutableStateOf("") }
-    var songUrl by remember { mutableStateOf("") }
-    val questions = remember { mutableStateListOf<String>() }
-    var radius by remember { mutableStateOf(150) }
-    var openTogether by remember { mutableStateOf(false) }
-    var contribute by remember { mutableStateOf(false) }
-    var routes by remember { mutableStateOf<List<Route>>(emptyList()) }
-    var routeId by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) { routes = runCatching { Repo.routes() }.getOrDefault(emptyList()) }
-
-    // ---------- Borrador automático ----------
-    var draftReady by remember { mutableStateOf(false) }
-    var restored by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        DraftStore.load(ctx)?.let { d ->
-            title = d.title; letter = d.letter; template = d.template
-            items.clear(); items.addAll(d.items.map { PickedItem(Uri.parse(it.uri), it.kind) })
-            voiceNotes.clear(); voiceNotes.addAll(d.voiceNotes.map { File(it) }.filter { it.exists() })
-            useDate = d.useDate; unlockAt = d.unlockAtEpoch?.let { Instant.ofEpochMilli(it) } ?: unlockAt
-            usePlace = d.usePlace; requirePlace = d.requirePlace; placeName = d.placeName
-            emails = d.emails; songTitle = d.songTitle; songUrl = d.songUrl
-            questions.clear(); questions.addAll(d.questions)
-            radius = d.radius; openTogether = d.openTogether; contribute = d.contribute; routeId = d.routeId
-            restored = true
-        }
-        draftReady = true
-    }
-    LaunchedEffect(Unit) {
-        snapshotFlow {
-            SavedDraft(
-                title = title, letter = letter, items = items.map { SavedItem(it.uri.toString(), it.kind) },
-                voiceNotes = voiceNotes.map { it.absolutePath }, unlockAtEpoch = unlockAt?.toEpochMilli(), useDate = useDate,
-                usePlace = usePlace, requirePlace = requirePlace, placeName = placeName, emails = emails, template = template,
-                songTitle = songTitle, songUrl = songUrl, questions = questions.toList(), radius = radius,
-                openTogether = openTogether, contribute = contribute, routeId = routeId,
-            )
-        }.collectLatest { d -> if (draftReady) { kotlinx.coroutines.delay(300); DraftStore.save(ctx, d) } }
-    }
     // Al volver de YouTube/Spotify: si copiaste el enlace de la canción, se pega solo
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
         val obs = LifecycleEventObserver { _, e ->
-            if (e == Lifecycle.Event.ON_RESUME && songUrl.isBlank()) {
+            if (e == Lifecycle.Event.ON_RESUME) {
                 val cb = ctx.getSystemService(ClipboardManager::class.java)
-                val clip = runCatching { cb?.primaryClip?.getItemAt(0)?.text?.toString() }.getOrNull().orEmpty()
-                ReglasCapsula.enlaceDeCancion(clip)?.let { songUrl = it }
+                vm.pegarCancionSiHay(runCatching { cb?.primaryClip?.getItemAt(0)?.text?.toString() }.getOrNull().orEmpty())
             }
         }
         lifecycle.addObserver(obs)
         onDispose { lifecycle.removeObserver(obs) }
     }
-    LaunchedEffect(recording) { while (recording) { recMs = recorder.elapsedMs; if (recMs >= ReglasCapsula.NOTA_DE_VOZ_MAX_MS) { recorder.stop()?.let { voiceNotes += it }; recording = false }; delay(200) } }
-    DisposableEffect(Unit) { onDispose { recorder.stop() } }
-    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        if (ok) runCatching { recorder.start(); recording = true }.onFailure { error = "No se pudo usar el micrófono." }
-        else error = "Sin permiso del micrófono no se pueden grabar notas de voz."
-    }
 
-    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(20)) { uris ->
-        var skipped = 0
-        uris.forEach { u ->
-            if (items.any { it.uri == u }) return@forEach
-            runCatching { ctx.contentResolver.takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            val kind = MediaUtil.kindOf(ctx, u)
-            val photos = items.count { it.kind == "photo" }; val videos = items.count { it.kind == "video" }
-            if (ReglasCapsula.cabe(kind, photos, videos)) items += PickedItem(u, kind) else skipped++
-        }
-        if (skipped > 0) error = "Máximo ${ReglasCapsula.MAX_FOTOS} fotos y ${ReglasCapsula.MAX_VIDEOS} video por cápsula. Se omitieron $skipped."
-    }
-    val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        if (ok) cameraUri?.let {
-            if (ReglasCapsula.cabe("photo", items.count { i -> i.kind == "photo" }, 0)) items += PickedItem(it, "photo")
-            else error = "Máximo ${ReglasCapsula.MAX_FOTOS} fotos por cápsula."
-        }
-    }
-
-    /** Toma el GPS real y busca la dirección y los sitios con nombre alrededor. */
-    fun locate() {
-        locating = true
-        scope.launch {
-            val loc = LocationUtil.current(ctx)
-            if (loc == null) {
-                error = "No se pudo obtener tu ubicación. Revisa que el GPS esté encendido."
-            } else {
-                lat = loc.latitude; lng = loc.longitude; accuracy = loc.accuracy.toInt()
-                address = Places.address(ctx, loc.latitude, loc.longitude)
-                nearby = Places.nearby(loc.latitude, loc.longitude)
-                // Si estás prácticamente dentro de un lugar con nombre, se elige solo
-                if (placeName.isBlank()) placeName = ReglasCapsula.lugarSugerido(nearby, address)
-            }
-            locating = false
-        }
-    }
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> vm.alternarGrabacion(ok) }
+    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(20)) { vm.agregarMedios(it) }
+    val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { vm.fotoTomada(it) }
     val locPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { res ->
-        if (res[Manifest.permission.ACCESS_FINE_LOCATION] == true || res[Manifest.permission.ACCESS_COARSE_LOCATION] == true) locate()
-        else usePlace = false
+        if (res[Manifest.permission.ACCESS_FINE_LOCATION] == true || res[Manifest.permission.ACCESS_COARSE_LOCATION] == true) vm.ubicar()
+        else vm.cambiarUsarLugar(false)
     }
-    fun askLocation() = locPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-
-    // Al abrir la pantalla: si ya diste permiso, registra el lugar automáticamente
-    LaunchedEffect(Unit) { if (LocationUtil.hasFine(ctx)) locate() else askLocation() }
-
-    fun save() {
-        error = null
-        error = ReglasCapsula.validar(FormularioCapsula(
-            titulo = title, carta = letter, medios = items.size, usarFecha = useDate, abreEl = unlockAt,
-            usarLugar = usePlace, soloEnElLugar = requirePlace, tieneUbicacion = lat != null,
-            usarClave = useKey, clave = key, claveRepetida = key2,
-        ))
-        if (error != null) return
-        saving = true
-        scope.launch {
-            runCatching {
-                Repo.create(ctx, Draft(
-                    title = title, letter = letter, items = items.toList(),
-                    unlockAt = if (useDate) unlockAt else null,
-                    placeName = if (usePlace) placeName.ifBlank { address } else null,
-                    lat = if (usePlace) lat else null, lng = if (usePlace) lng else null,
-                    requirePlace = usePlace && requirePlace,
-                    shareEmails = ReglasCapsula.correos(emails),
-                    key = if (useKey) key else null,
-                    voiceNotes = voiceNotes.toList(),
-                    songUrl = songUrl, songTitle = songTitle, template = template,
-                    questions = questions.toList(), radiusM = radius,
-                    openTogether = openTogether && ReglasCapsula.correos(emails).isNotEmpty(), shareContribute = contribute,
-                    routeId = routeId, routeOrder = routeId?.let { rid -> runCatching { Repo.nextRouteOrder(rid) }.getOrDefault(1) },
-                )) { text, p -> progressText = text; progress = p }
-            }.onSuccess { DraftStore.clear(ctx); onCreated(it) }
-             .onFailure { error = Repo.friendly(it); saving = false }
-        }
+    fun ubicarConPermiso() {
+        if (LocationUtil.hasFine(ctx)) vm.ubicar()
+        else locPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
     }
+    // Al abrir la pantalla por primera vez: registra el lugar (o pide permiso)
+    LaunchedEffect(Unit) { if (vm.lat == null && vm.usarLugar) ubicarConPermiso() }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -353,7 +187,7 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text("Nueva cápsula") },
-                navigationIcon = { IconButton(onClick = onBack, enabled = !saving) { Icon(Icons.AutoMirrored.Filled.ArrowBack, com.timecapsule.app.ui.tr("Volver")) } },
+                navigationIcon = { IconButton(onClick = onBack, enabled = !vm.guardando) { Icon(Icons.AutoMirrored.Filled.ArrowBack, com.timecapsule.app.ui.tr("Volver")) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
@@ -362,108 +196,92 @@ fun CreateCapsuleScreen(onBack: () -> Unit, onCreated: (String) -> Unit) {
             Modifier.padding(pad).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            if (restored) BorradorRecuperado {
-                DraftStore.clear(ctx); restored = false
-                title = ""; letter = ""; items.clear(); voiceNotes.clear(); songTitle = ""; songUrl = ""; questions.clear(); template = null; emails = ""
-            }
-            SeccionTitulo(title, { title = it }, titleIdeas, pensando = aiBusy == "titulo",
-                puedeSugerir = items.any { it.kind == "photo" } || letter.isNotBlank(), iaOcupada = aiBusy != null, onSugerir = ::suggestTitle)
-            SeccionCarta(letter, { letter = it }, pensando = aiBusy == "carta", iaOcupada = aiBusy != null, onAyuda = { helpLetter("cálido") },
-                puedeDeshacer = letterBefore != null, onDeshacer = { letter = letterBefore!!; letterBefore = null },
-                plantilla = template, onPlantilla = { id, texto -> template = id; letter = ReglasCapsula.conPlantilla(letter, texto) })
-            SeccionNotasDeVoz(voiceNotes, onBorrar = { i -> voiceNotes.removeAt(i).delete() }, grabando = recording, ms = recMs, onGrabar = {
-                if (recording) { recorder.stop()?.let { voiceNotes += it }; recording = false }
-                else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            if (vm.borradorRecuperado) BorradorRecuperado { vm.empezarDeNuevo() }
+            SeccionTitulo(vm.titulo, vm::cambiarTitulo, vm.ideasDeTitulo, pensando = vm.iaOcupada == "titulo",
+                puedeSugerir = vm.medios.any { it.kind == "photo" } || vm.carta.isNotBlank(), iaOcupada = vm.iaOcupada != null, onSugerir = vm::sugerirTitulo)
+            SeccionCarta(vm.carta, vm::cambiarCarta, pensando = vm.iaOcupada == "carta", iaOcupada = vm.iaOcupada != null, onAyuda = { vm.mejorarCarta("cálido") },
+                puedeDeshacer = vm.cartaAnterior != null, onDeshacer = vm::deshacerCarta,
+                plantilla = vm.plantilla, onPlantilla = vm::usarPlantilla)
+            SeccionNotasDeVoz(vm.notasDeVoz, onBorrar = vm::borrarNota, grabando = vm.grabando, ms = vm.msGrabados, onGrabar = {
+                if (vm.grabando) vm.alternarGrabacion(true) else micPermission.launch(Manifest.permission.RECORD_AUDIO)
             })
-            SeccionCancion(songTitle, { songTitle = it }, songUrl, { songUrl = it }, onBuscar = { base -> openSearch(ctx, base, songTitle) })
-            SeccionPreguntas(questions, onQuitar = { questions.removeAt(it) }, onAgregar = { q ->
-                val nuevas = ReglasCapsula.agregarPregunta(questions, q)
-                if (nuevas.size != questions.size) questions += nuevas.last()
-            })
-            SeccionMedios(items,
+            SeccionCancion(vm.cancion, vm::cambiarCancion, vm.enlaceCancion, vm::cambiarEnlaceCancion, onBuscar = { base -> openSearch(ctx, base, vm.cancion) })
+            SeccionPreguntas(vm.preguntas, onQuitar = vm::quitarPregunta, onAgregar = vm::agregarPregunta)
+            SeccionMedios(vm.medios,
                 onGaleria = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
                 onCamara = {
                     val dir = File(ctx.cacheDir, "camera").apply { mkdirs() }
-                    val file = File(dir, "foto_${System.currentTimeMillis()}.jpg")
-                    val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", file)
-                    cameraUri = uri
+                    val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", File(dir, "foto_${System.currentTimeMillis()}.jpg"))
+                    vm.fotoEnCamara = uri
                     takePhoto.launch(uri)
                 },
-                onQuitar = { items.removeAt(it) })
+                onQuitar = vm::quitarMedio)
 
             HorizontalDivider()
-            SeccionFecha(useDate, { useDate = it }, unlockAt, { unlockAt = it }, onElegirFecha = { showDate = true })
-            SeccionClave(useKey, { useKey = it }, key, { key = it }, key2, { key2 = it })
+            SeccionFecha(vm.usarFecha, vm::cambiarUsarFecha, vm.abreEl, vm::cambiarAbreEl, onElegirFecha = { vm.verFecha = true })
+            SeccionClave(vm.usarClave, vm::cambiarUsarClave, vm.clave, vm::cambiarClave, vm.clave2, vm::cambiarClave2)
 
             HorizontalDivider()
             SeccionLugar(
-                usarLugar = usePlace, onUsarLugar = { on ->
-                    usePlace = on
-                    if (on && lat == null) { if (LocationUtil.hasFine(ctx)) locate() else askLocation() }
-                },
-                buscando = locating, lat = lat, lng = lng, precision = accuracy, direccion = address,
-                cercanos = nearby, nombre = placeName, onNombre = { placeName = it },
-                onActualizar = { if (LocationUtil.hasFine(ctx)) locate() else askLocation() },
-                soloAqui = requirePlace, onSoloAqui = { requirePlace = it }, radio = radius, onRadio = { radius = it },
-                rutas = routes, rutaId = routeId, onRuta = { routeId = it },
-                onCrearRuta = { nombre ->
-                    scope.launch {
-                        runCatching { Repo.createRoute(nombre) }.onSuccess { r -> routes = listOf(r) + routes; routeId = r.id }
-                            .onFailure { error = Repo.friendly(it) }
-                    }
-                },
+                usarLugar = vm.usarLugar, onUsarLugar = { on -> vm.cambiarUsarLugar(on); if (on && vm.lat == null) ubicarConPermiso() },
+                buscando = vm.buscandoLugar, lat = vm.lat, lng = vm.lng, precision = vm.precision, direccion = vm.direccion,
+                cercanos = vm.cercanos, nombre = vm.nombreLugar, onNombre = vm::cambiarNombreLugar,
+                onActualizar = ::ubicarConPermiso,
+                soloAqui = vm.soloEnElLugar, onSoloAqui = vm::cambiarSoloEnElLugar, radio = vm.radio, onRadio = vm::cambiarRadio,
+                rutas = vm.rutas, rutaId = vm.rutaId, onRuta = vm::cambiarRuta,
+                onCrearRuta = { vm.crearRuta(it) },
             )
 
             HorizontalDivider()
-            SeccionCompartir(emails, { emails = it }, contribute, { contribute = it }, openTogether, { openTogether = it })
+            SeccionCompartir(vm.correos, vm::cambiarCorreos, vm.colaborativa, vm::cambiarColaborativa, vm.abrirJuntos, vm::cambiarAbrirJuntos)
 
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            if (saving) {
-                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
-                Text(progressText, color = Muted)
+            vm.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            if (vm.guardando) {
+                LinearProgressIndicator(progress = { vm.progreso }, modifier = Modifier.fillMaxWidth())
+                Text(vm.textoProgreso, color = Muted)
             }
-            Button(onClick = ::save, enabled = !saving, modifier = Modifier.fillMaxWidth().height(54.dp)) {
-                Text(if (saving) "Guardando…" else "Sellar cápsula")
+            Button(onClick = vm::sellar, enabled = !vm.guardando, modifier = Modifier.fillMaxWidth().height(54.dp)) {
+                Text(if (vm.guardando) "Guardando…" else "Sellar cápsula")
             }
             Spacer(Modifier.height(24.dp))
         }
     }
 
     // ---------- Selector de fecha y hora ----------
-    if (showDate) {
+    if (vm.verFecha) {
         val todayUtc = LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         val state = rememberDatePickerState(
-            initialSelectedDateMillis = unlockAt?.let { it.atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() },
+            initialSelectedDateMillis = vm.abreEl?.let { it.atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() },
             selectableDates = object : SelectableDates {
                 override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= todayUtc
             },
         )
         DatePickerDialog(
-            onDismissRequest = { showDate = false },
+            onDismissRequest = { vm.verFecha = false },
             confirmButton = {
                 TextButton(onClick = {
                     state.selectedDateMillis?.let {
-                        pickedDate = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
-                        showDate = false; showTime = true
+                        vm.fechaElegida = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
+                        vm.verFecha = false; vm.verHora = true
                     }
                 }) { Text("Siguiente") }
             },
-            dismissButton = { TextButton(onClick = { showDate = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { vm.verFecha = false }) { Text("Cancelar") } },
         ) { DatePicker(state) }
     }
-    if (showTime) {
+    if (vm.verHora) {
         val t = rememberTimePickerState(initialHour = 9, initialMinute = 0, is24Hour = false)
         AlertDialog(
-            onDismissRequest = { showTime = false },
+            onDismissRequest = { vm.verHora = false },
             title = { Text("¿A qué hora?") },
             text = { TimePicker(t) },
             confirmButton = {
                 TextButton(onClick = {
-                    pickedDate?.let { d -> unlockAt = d.atTime(LocalTime.of(t.hour, t.minute)).atZone(ZoneId.systemDefault()).toInstant() }
-                    showTime = false
+                    vm.fechaElegida?.let { d -> vm.cambiarAbreEl(d.atTime(LocalTime.of(t.hour, t.minute)).atZone(ZoneId.systemDefault()).toInstant()) }
+                    vm.verHora = false
                 }) { Text("Listo") }
             },
-            dismissButton = { TextButton(onClick = { showTime = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { vm.verHora = false }) { Text("Cancelar") } },
         )
     }
 }
