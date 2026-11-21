@@ -17,23 +17,25 @@ android {
         versionName = "3.1"
     }
 
-    // Una sola llave para TODOS los APK (los de este PC y los de GitHub):
-    // así "Continuar con Google" funciona para cualquier persona que instale la app.
-    // Su huella (SHA-1) está registrada en Google Cloud. Ver firma/LEEME.md
+    // Llave PRIVADA de producción: vive fuera del repositorio y su contraseña nunca se escribe aquí.
+    // Se lee de ~/.gradle/gradle.properties (TC_STORE_FILE, TC_STORE_PASSWORD, TC_KEY_ALIAS)
+    // o de variables de entorno con el mismo nombre (GitHub Actions). Ver FIRMA.md
+    val llave = providers.gradleProperty("TC_STORE_FILE").orElse(providers.environmentVariable("TC_STORE_FILE")).orNull
     signingConfigs {
-        create("timecapsule") {
-            storeFile = file("firma/timecapsule.keystore")
-            storePassword = "android"
-            keyAlias = "timecapsule"
-            keyPassword = "android"
+        if (llave != null) create("produccion") {
+            storeFile = file(llave)
+            storePassword = providers.gradleProperty("TC_STORE_PASSWORD").orElse(providers.environmentVariable("TC_STORE_PASSWORD")).get()
+            keyAlias = providers.gradleProperty("TC_KEY_ALIAS").orElse(providers.environmentVariable("TC_KEY_ALIAS")).get()
+            keyPassword = storePassword
         }
     }
 
     buildTypes {
-        debug { signingConfig = signingConfigs.getByName("timecapsule") }
         release {
-            signingConfig = signingConfigs.getByName("timecapsule")
-            isMinifyEnabled = false
+            // Sin la llave (por ejemplo en GitHub) el APK de producción sale sin firmar
+            signingConfig = signingConfigs.findByName("produccion")
+            isMinifyEnabled = true          // R8: quita código sin usar y lo ofusca
+            isShrinkResources = true        // quita imágenes y textos sin usar
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
