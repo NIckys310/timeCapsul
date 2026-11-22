@@ -15,6 +15,7 @@ android {
         targetSdk = 35
         versionCode = 13
         versionName = "3.1"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // Llave PRIVADA de producción: vive fuera del repositorio y su contraseña nunca se escribe aquí.
@@ -103,4 +104,12 @@ dependencies {
     // Pruebas automáticas
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+
+    // Pruebas de interfaz en el emulador o el celular
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
