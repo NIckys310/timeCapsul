@@ -15,6 +15,10 @@ on:
     - cron: "17 13 * * *"     # todos los días, 8:17 a. m. en Colombia
   workflow_dispatch: {}        # también se puede correr a mano en la pestaña Actions
 
+permissions:
+  contents: read
+  issues: write                # para abrir un aviso si algo se pausa
+
 jobs:
   despertar:
     runs-on: ubuntu-latest
@@ -34,3 +38,23 @@ jobs:
           check "Time Capsule" POST "https://frascwpukyygsaeeohnr.supabase.co/rest/v1/rpc/ping" "sb_publishable_HlD6zjfxofaUGFguDr5yNQ_7K5CVBPY" "{}"
           check "Guardián" GET "https://jktmtdpgvjlrdxqmdbrp.supabase.co/rest/v1/species?select=id&limit=1" "sb_publishable_Z33OvW2c8XZvI7G9AbgrRA_N4yqqYwi"
           exit $fallo
+      - name: Avisar con un issue (llega por correo) si algo se pausó
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          abierto=$(gh issue list --label caida --state open --json number -q 'length')
+          if [ "$abierto" = "0" ]; then
+            gh label create caida --color B60205 --description "Un servicio no responde" 2>/dev/null || true
+            gh issue create --label caida --title "⚠ Una base de datos de las apps no responde"               --body "La revisión diaria falló: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Abre https://guardian-fauna.netlify.app/estado/ para ver cuál y reactivarla en Supabase (Restore project)."
+          fi
+      - name: Cerrar el aviso cuando todo vuelve a funcionar
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for n in $(gh issue list --label caida --state open --json number -q '.[].number'); do
+            gh issue close "$n" --comment "Todo responde otra vez ✅"
+          done
