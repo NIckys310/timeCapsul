@@ -6,7 +6,7 @@ La llave de producción es **privada**: no está en este repositorio.
 |---|---|
 | Archivo | `C:/Users/Nicky/.claves-android/timecapsule-release.jks` (fuera del repo) |
 | Alias | `timecapsule` |
-| Contraseña | en `~/.gradle/gradle.properties` como `TC_STORE_PASSWORD` (no se sube a GitHub) |
+| Contraseña | cifrada con DPAPI de Windows en `~/.gradle/gradle.properties` como `TC_STORE_PASSWORD_DPAPI`: solo tu usuario de Windows en este PC puede descifrarla. Nunca está en texto plano ni en GitHub |
 | SHA-1 | `F4:C6:29:1F:A0:FE:5E:87:CA:37:74:8C:15:14:8B:31:9A:DA:02:8A` (registrada en Google Cloud) |
 
 ## Crear el APK de producción
