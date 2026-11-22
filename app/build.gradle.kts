@@ -20,7 +20,7 @@ android {
 
     // Llave PRIVADA de producción: vive fuera del repositorio y su contraseña nunca se escribe aquí.
     // Se lee de ~/.gradle/gradle.properties (TC_STORE_FILE, TC_STORE_PASSWORD_DPAPI, TC_KEY_ALIAS)
-    // o de variables de entorno con el mismo nombre (GitHub Actions). Ver FIRMA.md
+    // o de variables de entorno con el mismo nombre (GitHub Actions). Ver docs/FIRMA.md
     val llave = providers.gradleProperty("TC_STORE_FILE").orElse(providers.environmentVariable("TC_STORE_FILE")).orNull
     signingConfigs {
         if (llave != null) create("produccion") {

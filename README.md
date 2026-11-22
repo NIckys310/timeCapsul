@@ -1,5 +1,26 @@
 # Time Capsule · App móvil (Android)
 
+## Estructura del repositorio
+```
+timeCapsul/
+├─ README.md                  ← estás aquí: qué es y cómo ponerla a funcionar
+├─ docs/
+│  ├─ SEGURIDAD.md            ← contraseñas, claves de cápsula, datos y la IA
+│  ├─ PRUEBAS.md              ← qué revisa cada prueba y cómo correrlas
+│  └─ FIRMA.md                ← llave de firma privada y APK de producción
+├─ .github/workflows/         ← revisión automática (pruebas, emulador, IA, Supabase despierto)
+├─ app/                       ← la app Android
+│  └─ src/main/java/com/timecapsule/app/
+│     ├─ data/                ← Supabase, modelos, reglas de cápsula y contraseña, Google
+│     ├─ ui/screens/          ← pantallas (y el ViewModel de Nueva cápsula)
+│     ├─ ui/components/       ← piezas reutilizables (audio, álbum, bloqueo)
+│     ├─ ui/theme/ · ui/      ← colores claro/oscuro, idioma español/inglés
+│     ├─ notify/ · geo/       ← avisos y lugares
+│     └─ util/                ← fechas, pistas, medios y registro de fallos
+├─ ia/                        ← función de IA en Netlify (Claude) y sus pruebas
+└─ supabase/                  ← base de datos: tablas, reglas RLS y funciones (en orden 1 → 6)
+```
+
 Cápsulas del tiempo digitales con fotos, videos y cartas que solo se abren en una fecha
 o al volver a un lugar. Se comparten con familia y amigos, y la IA resume los recuerdos,
 crea una línea de tiempo interactiva y un mapa de recuerdos.
