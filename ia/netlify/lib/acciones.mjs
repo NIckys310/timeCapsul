@@ -5,7 +5,7 @@
    no llaman a nadie, así que se pueden probar.
    ========================================================= */
 import { leer, escribir, fotoBase64 } from './supabase.mjs';
-import { preguntar, extraerJson, imagen } from './claude.mjs';
+import { preguntar, extraerJson, imagen, datoUsuario } from './claude.mjs';
 
 export const ACCIONES = ['summary', 'timeline', 'suggest', 'letter', 'year_ago', 'album'];
 const corto = (t, n) => String(t ?? '').slice(0, n);
@@ -14,7 +14,7 @@ const corto = (t, n) => String(t ?? '').slice(0, n);
 export const promptResumen = (c, fotos, videos) => `Eres el narrador cálido de una app de cápsulas del tiempo.
 Esta cápsula se llama "${c.title}", se guardó el ${c.created_at}${c.place_name ? ` en ${c.place_name}` : ''}.
 Tiene ${fotos} fotos (adjuntas) y ${videos} videos.
-Carta que escribió la persona: """${corto(c.letter, 3000)}"""
+Carta que escribió la persona: ${datoUsuario(c.letter, 3000)}
 Escribe en español un resumen emotivo de 3 a 5 frases, en segunda persona ("Ese día…", "Recuerdas…"),
 mencionando detalles concretos que se ven en las fotos y el sentido de la carta.
 No inventes nombres ni hechos que no aparezcan. Sin títulos, listas ni markdown.`;
@@ -39,7 +39,7 @@ Responde SOLO con JSON válido con esta forma:
  "lugares":[{"nombre":"","resumen":"1 frase","lat":0,"lng":0}]}
 Cápsulas: ${JSON.stringify(items)}`;
 
-export const promptSugerir = (n, lugar, carta) => `Ayudas a crear cápsulas del tiempo. Con ${n} fotos (numeradas desde 0 en el orden adjunto)${lugar ? `, tomadas en ${lugar}` : ''} y esta carta: """${corto(carta, 1500)}"""
+export const promptSugerir = (n, lugar, carta) => `Ayudas a crear cápsulas del tiempo. Con ${n} fotos (numeradas desde 0 en el orden adjunto)${lugar ? `, tomadas en ${lugar}` : ''} y esta carta: ${datoUsuario(carta, 1500)}
 Propón 3 títulos cortos (máx. 6 palabras), cálidos y en español, y elige la foto más bonita para portada.
 Responde SOLO JSON: {"titulos":["","",""],"portada":0}`;
 
@@ -47,8 +47,8 @@ export const promptCarta = (carta, titulo, tono) => `Ayudas a escribir cartas pa
 Mejora y completa esta carta con un tono ${tono}. Conserva TODO lo que la persona escribió (nombres, hechos y su forma de hablar); solo ordena, corrige y agrega 1 o 2 frases que lo hagan más emotivo. No inventes hechos.
 Si la carta está casi vacía, escribe un borrador corto para que la persona lo complete con [espacios entre corchetes].
 Devuelve SOLO la carta, sin explicaciones.
-Carta: """${corto(carta, 4000)}"""
-Título de la cápsula: ${corto(titulo, 200)}`;
+Carta: ${datoUsuario(carta, 4000)}
+Título de la cápsula: ${datoUsuario(titulo, 200)}`;
 
 export const promptHaceUnAno = (c) => `Escribe en español una notificación breve (máx. 2 frases, segunda persona, cálida) para recordar que hace un año la persona guardó la cápsula "${c.title}"${c.place_name ? ` en ${c.place_name}` : ''}. Contexto: ${corto(c.ai_summary || c.letter, 600)}. Sin comillas ni emojis al inicio.`;
 
