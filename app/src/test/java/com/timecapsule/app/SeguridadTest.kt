@@ -62,4 +62,12 @@ class SeguridadTest {
         val ia = File(raiz, "supabase/functions/ai-memories/index.ts").readText()
         assertTrue(ia.contains("""Deno.env.get("ANTHROPIC_API_KEY")"""))
     }
+
+    @Test fun `las claves de capsula se guardan como huella bcrypt de costo 12`() {
+        // La última versión de cada función es la que queda en la base de datos
+        val ultima = sql.last { it.readText().contains("function public.set_capsule_key") }.readText()
+        assertTrue(ultima.contains("gen_salt('bf', 12)"))
+        assertTrue("las huellas viejas se mejoran al abrir", ultima.contains("substr(h, 5, 2)::int < 12"))
+        assertTrue("nunca se guarda la clave en texto", !Regex("""set\s+key\s*=""").containsMatchIn(todo))
+    }
 }
