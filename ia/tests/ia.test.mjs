@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import aiHandler from '../netlify/functions/ia.mjs';
-import { timelineItems, promptTimeline, promptLetter, promptSuggest, promptSummary, validTone, yearAgoWindow, ACTIONS, withLanguage } from '../netlify/lib/acciones.mjs';
+import { timelineItems, promptTimeline, promptLetter, promptSuggest, promptSummary, validTone, yearAgoWindow, ACTIONS, withLanguage } from '../netlify/lib/actions.mjs';
 import { extractJson, userData, SYSTEM_PROMPT } from '../netlify/lib/claude.mjs';
 import { DAILY_LIMIT } from '../netlify/lib/supabase.mjs';
 

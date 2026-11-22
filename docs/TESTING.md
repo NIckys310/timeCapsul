@@ -22,5 +22,5 @@ cd ia && npm test
 Sesión obligatoria, límite diario, idioma, formato de respuesta y protección contra instrucciones escondidas en la carta.
 
 ## En GitHub
-`android.yml` (pruebas, lint, APK y emulador), `ia.yml` (IA) y `mantener-supabase.yml` (revisa cada día que la base de datos
+`android.yml` (pruebas, lint, APK y emulador), `ia.yml` (IA) y `keep-supabase-awake.yml` (revisa cada día que la base de datos
 responda y abre un aviso si algo se pausa).

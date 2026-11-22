@@ -5,9 +5,9 @@
 timeCapsul/
 ├─ README.md                  ← estás aquí: qué es y cómo ponerla a funcionar
 ├─ docs/
-│  ├─ SEGURIDAD.md            ← contraseñas, claves de cápsula, datos y la IA
-│  ├─ PRUEBAS.md              ← qué revisa cada prueba y cómo correrlas
-│  └─ FIRMA.md                ← llave de firma privada y APK de producción
+│  ├─ SECURITY.md            ← contraseñas, claves de cápsula, datos y la IA
+│  ├─ TESTING.md              ← qué revisa cada prueba y cómo correrlas
+│  └─ SIGNING.md                ← llave de firma privada y APK de producción
 ├─ .github/workflows/         ← revisión automática (pruebas, emulador, IA, Supabase despierto)
 ├─ app/                       ← la app Android
 │  └─ src/main/java/com/timecapsule/app/
@@ -146,5 +146,5 @@ Netlify pone la clave de Claude por su cuenta (AI Gateway): **no hay ninguna cla
 - Máximo **40 usos por persona cada 24 h** (tabla `ai_uso`, `supabase/4_uso_de_ia.sql`).
 - Todo se lee con la sesión de la persona: se respetan las reglas RLS.
 - Pruebas: `cd ia && npm test` (18 pruebas, sin gastar IA real).
-- Publicar: `npx netlify-cli deploy --prod --dir publico --functions netlify/functions` desde `ia/`.
+- Publicar: `npx netlify-cli deploy --prod --dir public --functions netlify/functions` desde `ia/`.
 - La función vieja de Supabase (`supabase/functions/ai-memories`) ya no se usa.

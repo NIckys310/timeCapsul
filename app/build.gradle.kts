@@ -20,7 +20,7 @@ android {
 
     // Llave PRIVADA de producción: vive fuera del repositorio y su contraseña nunca se escribe aquí.
     // Se lee de ~/.gradle/gradle.properties (TC_STORE_FILE, TC_STORE_PASSWORD_DPAPI, TC_KEY_ALIAS)
-    // o de variables de entorno con el mismo nombre (GitHub Actions). Ver docs/FIRMA.md
+    // o de variables de entorno con el mismo nombre (GitHub Actions). Ver docs/SIGNING.md
     val llave = providers.gradleProperty("TC_STORE_FILE").orElse(providers.environmentVariable("TC_STORE_FILE")).orNull
     signingConfigs {
         if (llave != null) create("produccion") {
@@ -123,7 +123,7 @@ dependencies {
 fun contrasenaDeLaLlave(prefijo: String): String {
     providers.environmentVariable("${prefijo}_STORE_PASSWORD").orNull?.let { return it }
     val cifrada = providers.gradleProperty("${prefijo}_STORE_PASSWORD_DPAPI").orNull
-        ?: error("Falta ${prefijo}_STORE_PASSWORD_DPAPI en ~/.gradle/gradle.properties (ver FIRMA.md)")
+        ?: error("Falta ${prefijo}_STORE_PASSWORD_DPAPI en ~/.gradle/gradle.properties (ver SIGNING.md)")
     val ps = "Add-Type -AssemblyName System.Security; " +
         "[Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect(" +
         "[Convert]::FromBase64String('$cifrada'), \$null, 'CurrentUser'))"

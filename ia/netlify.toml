@@ -3,7 +3,7 @@
 # Netlify pone la clave de Claude sola (AI Gateway): no hay claves en el código.
 # =========================================================
 [build]
-  publish = "publico"
+  publish = "public"
   functions = "netlify/functions"
   command = "npm install --omit=dev"
 

@@ -8,7 +8,7 @@
    ========================================================= */
 import { getUser, usageToday, recordUsage, DAILY_LIMIT } from '../lib/supabase.mjs';
 import { hasApiKey, MODEL, toFriendlyError } from '../lib/claude.mjs';
-import { ACTIONS, runAction } from '../lib/acciones.mjs';
+import { ACTIONS, runAction } from '../lib/actions.mjs';
 
 export const json = (status, body) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
