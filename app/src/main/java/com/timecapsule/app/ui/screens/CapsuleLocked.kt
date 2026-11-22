@@ -186,7 +186,7 @@ internal fun LockedPanel(c: Capsule, onOpened: () -> Unit, onTimeUp: () -> Unit)
                 key, { key = it; keyMsg = null }, label = { Text("Clave") }, singleLine = true,
                 leadingIcon = { Icon(Icons.Filled.Key, null) },
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                 modifier = Modifier.fillMaxWidth(),
             )
             Button(onClick = {

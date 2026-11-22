@@ -130,7 +130,7 @@ fun AuthScreen() {
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(pass, { pass = it }, label = { Text("Contraseña") }, singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
             modifier = Modifier.fillMaxWidth())
         if (register && pass.isNotEmpty()) {
             // Lo que le falta a la contraseña, en vivo mientras se escribe
