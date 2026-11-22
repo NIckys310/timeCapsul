@@ -1,6 +1,8 @@
 package com.timecapsule.app.ui.screens
 
 import com.timecapsule.app.ui.components.goldBorder
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import com.timecapsule.app.ui.components.enterAnim
 import android.Manifest
 import android.content.Intent
@@ -107,7 +109,7 @@ fun ContributePanel(c: Capsule, onAdded: () -> Unit) {
     val voice = remember { mutableStateListOf<File>() }
     val recorder = remember { VoiceRecorder(ctx) }
     var recording by remember { mutableStateOf(false) }
-    var recMs by remember { mutableStateOf(0L) }
+    var recMs by remember { mutableLongStateOf(0L) }
     var letter by remember { mutableStateOf("") }
     var status by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -149,7 +151,7 @@ fun OpenTogetherPanel(c: Capsule, onOpened: () -> Unit) {
     if (!c.openTogether || c.isOpen || !c.dateReady) return
     val scope = rememberCoroutineScope()
     var voted by remember { mutableStateOf(c.myVote) }
-    var votes by remember { mutableStateOf(c.votes) }
+    var votes by remember { mutableIntStateOf(c.votes) }
     val p = LocalPalette.current
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Abrir juntos: $votes de ${c.members} aceptaron", fontFamily = Typewriter, color = p.ink)

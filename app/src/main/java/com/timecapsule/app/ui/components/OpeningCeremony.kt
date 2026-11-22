@@ -1,6 +1,7 @@
 package com.timecapsule.app.ui.components
 
 import com.timecapsule.app.util.Fallos
+import androidx.compose.ui.unit.IntOffset
 
 import android.content.Context
 import android.os.Build
@@ -103,7 +104,7 @@ fun OpeningCeremony(title: String, photoPaths: List<String>, onDone: () -> Unit)
                 val angle = listOf(-12f, 8f, -3f)[i]
                 val dx = listOf(-70, 64, 0)[i]
                 Polaroid(
-                    Modifier.width(140.dp).offset(x = dx.dp, y = (60 - 210 * rise.value - i * 8).dp)
+                    Modifier.width(140.dp).offset { IntOffset(dx.dp.roundToPx(), (60 - 210 * rise.value - i * 8).dp.roundToPx()) }
                         .graphicsLayer { alpha = rise.value.coerceIn(0f, 1f); rotationZ = angle * rise.value },
                 ) { CloudImage(path, Modifier.fillMaxSize()) }
             }

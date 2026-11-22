@@ -1,6 +1,7 @@
 package com.timecapsule.app.ui.screens
 
 import android.Manifest
+import androidx.compose.runtime.mutableIntStateOf
 import android.graphics.drawable.GradientDrawable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -71,7 +72,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     var selected by remember { mutableStateOf<Capsule?>(null) }
     var hasLocation by remember { mutableStateOf(LocationUtil.hasFine(ctx)) }
     // Brillo animado de los cofres cercanos (cambia de fase cada 0,5 s)
-    var phase by remember { mutableStateOf(0) }
+    var phase by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(500); phase = (phase + 1) % 4 } }
 
     val map = remember {

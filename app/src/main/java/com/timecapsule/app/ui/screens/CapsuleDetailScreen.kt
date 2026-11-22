@@ -1,6 +1,7 @@
 package com.timecapsule.app.ui.screens
 
 import android.Manifest
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -123,7 +124,7 @@ fun CapsuleDetailScreen(id: String, onBack: () -> Unit, onChanged: () -> Unit) {
     var media by remember { mutableStateOf<List<Media>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var msg by remember { mutableStateOf<String?>(null) }
-    var reload by remember { mutableStateOf(0) }
+    var reload by remember { mutableIntStateOf(0) }
     var viewer by remember { mutableStateOf<Media?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var justOpened by remember { mutableStateOf(false) }
