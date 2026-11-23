@@ -1,6 +1,6 @@
 package com.timecapsule.app.ui.screens
 
-import com.timecapsule.app.util.Fallos
+import com.timecapsule.app.util.ErrorLog
 
 import com.timecapsule.app.ui.components.goldBorder
 import com.timecapsule.app.ui.components.enterAnim
@@ -137,7 +137,7 @@ fun InviteButton(capsuleId: String) {
             }) { Text("Crear código") }
             else TextButton(onClick = {
                 val text = "Te invito a mi cápsula del tiempo 💌\nAbre Time Capsule → “Unirme con código” y escribe: $c\n(o toca: timecapsule://invitar/$c)"
-                runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, com.timecapsule.app.ui.tr(text)), com.timecapsule.app.ui.tr("Compartir invitación"))) }.onFailure { Fallos.registrar("CapsuleInvite:138", it) }
+                runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, com.timecapsule.app.ui.tr(text)), com.timecapsule.app.ui.tr("Compartir invitación"))) }.onFailure { ErrorLog.record("CapsuleInvite:138", it) }
             }) { Icon(Icons.Filled.Share, null); Spacer(Modifier.width(4.dp)); Text("Compartir") }
         },
         dismissButton = { TextButton(onClick = { ask = false; code = null }) { Text("Cerrar") } },

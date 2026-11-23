@@ -1,7 +1,7 @@
 package com.timecapsule.app.util
 
 import com.timecapsule.app.data.Capsule
-import com.timecapsule.app.ui.Idioma
+import com.timecapsule.app.ui.Language
 import com.timecapsule.app.ui.tr
 import java.time.Duration
 import java.time.Instant
@@ -10,10 +10,10 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val es = Locale("es", "CO")
-private val ingles get() = Idioma.codigo == "en"
-private val local: Locale get() = if (ingles) Locale.ENGLISH else es
-private val dateFmt get() = DateTimeFormatter.ofPattern(if (ingles) "MMM d, yyyy" else "d MMM yyyy", local)
-private val dateTimeFmt get() = DateTimeFormatter.ofPattern(if (ingles) "MMM d, yyyy, h:mm a" else "d MMM yyyy, h:mm a", local)
+private val english get() = Language.code == "en"
+private val local: Locale get() = if (english) Locale.ENGLISH else es
+private val dateFmt get() = DateTimeFormatter.ofPattern(if (english) "MMM d, yyyy" else "d MMM yyyy", local)
+private val dateTimeFmt get() = DateTimeFormatter.ofPattern(if (english) "MMM d, yyyy, h:mm a" else "d MMM yyyy, h:mm a", local)
 private val monthFmt get() = DateTimeFormatter.ofPattern("MMMM yyyy", local)
 
 fun Instant.fmtDate(): String = atZone(ZoneId.systemDefault()).format(dateFmt)

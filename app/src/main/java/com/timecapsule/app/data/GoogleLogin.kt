@@ -23,25 +23,25 @@ import java.util.UUID
  */
 object GoogleLogin {
     /** El botón solo aparece cuando el ID de cliente web ya está configurado. */
-    fun disponible() = Config.GOOGLE_WEB_CLIENT_ID.isNotBlank()
+    fun available() = Config.GOOGLE_WEB_CLIENT_ID.isNotBlank()
 
     /** Huella del "nonce": evita que alguien reutilice un token robado. */
-    fun huella(texto: String): String =
-        MessageDigest.getInstance("SHA-256").digest(texto.toByteArray()).joinToString("") { "%02x".format(it) }
+    fun fingerprint(text: String): String =
+        MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
 
     /** Devuelve false si la persona cerró la ventana de Google sin elegir cuenta. */
-    suspend fun entrar(ctx: Context): Boolean {
+    suspend fun enter(ctx: Context): Boolean {
         val nonce = UUID.randomUUID().toString()
-        val opcion = GetSignInWithGoogleOption.Builder(Config.GOOGLE_WEB_CLIENT_ID).setNonce(huella(nonce)).build()
-        val pedido = GetCredentialRequest.Builder().addCredentialOption(opcion).build()
-        val respuesta = try {
-            CredentialManager.create(ctx).getCredential(ctx, pedido)
+        val option = GetSignInWithGoogleOption.Builder(Config.GOOGLE_WEB_CLIENT_ID).setNonce(fingerprint(nonce)).build()
+        val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
+        val answer = try {
+            CredentialManager.create(ctx).getCredential(ctx, request)
         } catch (e: GetCredentialCancellationException) {
             return false
         } catch (e: NoCredentialException) {
             error("No hay cuentas de Google en este celular. Agrega una en Ajustes → Cuentas.")
         }
-        val cred = respuesta.credential
+        val cred = answer.credential
         if (cred !is CustomCredential || cred.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
             error("Google no devolvió una cuenta válida.")
         }

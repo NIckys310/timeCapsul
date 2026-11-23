@@ -1,6 +1,6 @@
 package com.timecapsule.app.ui.screens
 
-import com.timecapsule.app.util.Fallos
+import com.timecapsule.app.util.ErrorLog
 
 import com.timecapsule.app.ui.components.goldBorder
 import com.timecapsule.app.ui.components.enterAnim
@@ -119,7 +119,7 @@ fun SongCard(c: Capsule) {
         Button(onClick = {
             val url = c.songUrl?.takeIf { it.startsWith("http") }
                 ?: "https://www.youtube.com/results?search_query=" + Uri.encode(c.songTitle.orEmpty())
-            runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }.onFailure { Fallos.registrar("CapsuleExtras:120", it) }
+            runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }.onFailure { ErrorLog.record("CapsuleExtras:120", it) }
         }) { Icon(Icons.Filled.MusicNote, null); Spacer(Modifier.width(6.dp)); Text("Escuchar") }
     }
 }

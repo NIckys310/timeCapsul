@@ -255,11 +255,11 @@ object Repo {
             c.doOutput = true
             c.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             c.setRequestProperty("Authorization", "Bearer $token")
-            val conIdioma = kotlinx.serialization.json.JsonObject(body + ("idioma" to kotlinx.serialization.json.JsonPrimitive(com.timecapsule.app.ui.Idioma.codigo)))
-            c.outputStream.use { it.write(conIdioma.toString().toByteArray()) }
-            val texto = (if (c.responseCode < 400) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
-            val obj = runCatching { json.parseToJsonElement(texto).jsonObject }.getOrNull()
-                ?: error(if (c.responseCode == 401 && texto.contains("Login")) "La IA está en mantenimiento. Intenta más tarde." else "La IA no respondió bien (${c.responseCode}).")
+            val withLanguage = kotlinx.serialization.json.JsonObject(body + ("idioma" to kotlinx.serialization.json.JsonPrimitive(com.timecapsule.app.ui.Language.code)))
+            c.outputStream.use { it.write(withLanguage.toString().toByteArray()) }
+            val text = (if (c.responseCode < 400) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+            val obj = runCatching { json.parseToJsonElement(text).jsonObject }.getOrNull()
+                ?: error(if (c.responseCode == 401 && text.contains("Login")) "La IA está en mantenimiento. Intenta más tarde." else "La IA no respondió bien (${c.responseCode}).")
             obj["error"]?.jsonPrimitive?.contentOrNull?.let { error(it) }
             obj
         } finally { c.disconnect() }
@@ -276,8 +276,8 @@ object Repo {
     }
 
     /** Mejora o completa la carta (la persona decide si la usa). */
-    suspend fun aiLetter(letter: String, title: String, tono: String): String =
-        ai(buildJsonObject { put("action", "letter"); put("letter", letter); put("title", title); put("tono", tono) })["carta"]?.jsonPrimitive?.contentOrNull
+    suspend fun aiLetter(letter: String, title: String, tone: String): String =
+        ai(buildJsonObject { put("action", "letter"); put("letter", letter); put("title", title); put("tono", tone) })["carta"]?.jsonPrimitive?.contentOrNull
             ?: error("La IA no devolvió la carta")
 
     /** Recuerdo de "hace un año" (o null si no hay). */
@@ -295,7 +295,7 @@ object Repo {
 
     /** Convierte errores técnicos en mensajes claros. */
     fun friendly(e: Throwable): String {
-        com.timecapsule.app.util.Fallos.registrar("Repo", e)   // todo error que ve la persona queda registrado
+        com.timecapsule.app.util.ErrorLog.record("Repo", e)   // todo error que ve la persona queda registrado
         val m = e.message.orEmpty()
         return when {
             m.contains("Invalid login credentials", true) -> "Correo o contraseña incorrectos."

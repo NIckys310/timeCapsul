@@ -1,7 +1,7 @@
 package com.timecapsule.app.ui
 
 /** Diccionario español → inglés. {} = cualquier dato · {#} = solo un número. */
-internal val TRADUCCIONES: Map<String, String> = mapOf(
+internal val TRANSLATIONS: Map<String, String> = mapOf(
     // Cuenta y errores
     "No hay cuentas de Google en este celular. Agrega una en Ajustes → Cuentas." to "There are no Google accounts on this phone. Add one in Settings → Accounts.",
     "Google no devolvió una cuenta válida." to "Google did not return a valid account.",

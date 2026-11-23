@@ -107,15 +107,15 @@ gradlew :app:testDebugUnitTest
 
 | Archivo | Qué revisa |
 |---|---|
-| `FormatoTest` | "Faltan 3 años", "5 días", "2 h 10 min"; fechas en español |
-| `CapsulaTest` | Cuándo y dónde se abre una cápsula; fechas dañadas; clave para abrir antes |
-| `PistasTest` | "Caliente o frío" para encontrar la cápsula; tendencia y distancia |
-| `BorradorTest` | El borrador que no se pierde al ir a Spotify/YouTube; nunca guarda la clave |
-| `PlantillasTest` | Plantillas de carta y preguntas para el futuro |
-| `MensajesTest` | Errores en español sencillo; línea de tiempo guardada |
-| `ReglasCapsulaTest` | Reglas para sellar una cápsula: título, carta, fecha, lugar, clave, 20 fotos y 1 video, correos, canción y preguntas |
-| `AvisosTest` | Cuenta regresiva (1 semana, 1 día, 1 hora), avisos de apertura, cápsulas compartidas y actividad |
-| `SeguridadTest` | RLS en todas las tablas, funciones seguras y ninguna clave secreta en el código |
+| `FormatTest` | "Faltan 3 años", "5 días", "2 h 10 min"; fechas en español |
+| `CapsuleTest` | Cuándo y dónde se abre una cápsula; fechas dañadas; clave para abrir antes |
+| `HintsTest` | "Caliente o frío" para encontrar la cápsula; tendencia y distancia |
+| `DraftTest` | El borrador que no se pierde al ir a Spotify/YouTube; nunca guarda la clave |
+| `TemplatesTest` | Plantillas de carta y preguntas para el futuro |
+| `MessagesTest` | Errores en español sencillo; línea de tiempo guardada |
+| `CapsuleRulesTest` | Reglas para sellar una cápsula: título, carta, fecha, lugar, clave, 20 fotos y 1 video, correos, canción y preguntas |
+| `NotificationTextsTest` | Cuenta regresiva (1 semana, 1 día, 1 hora), avisos de apertura, cápsulas compartidas y actividad |
+| `SecurityTest` | RLS en todas las tablas, funciones seguras y ninguna clave secreta en el código |
 
 En GitHub, cada cambio corre las pruebas, el análisis de Android y crea el APK (`.github/workflows/android.yml`).
 
@@ -123,11 +123,11 @@ En GitHub, cada cambio corre las pruebas, el análisis de Android y crea el APK 
 | Pantalla | Archivos |
 |---|---|
 | Nueva cápsula | `CreateCapsuleScreen.kt` (estado y borrador automático) + `CreateCapsuleSections.kt` (título, carta, notas de voz, canción, preguntas, fotos, fecha, clave, lugar, compartir) |
-| Reglas de una cápsula nueva | `data/NuevaCapsula.kt` (validación y límites, con pruebas) |
+| Reglas de una cápsula nueva | `data/NewCapsuleForm.kt` (validación y límites, con pruebas) |
 | Ver una cápsula | `CapsuleDetailScreen.kt` + `CapsuleLocked.kt` (cerrada) + `CapsuleOpen.kt` (abierta) + `MediaViewer.kt` + `SharePanel.kt` |
 | Extras de una cápsula | `CapsuleExtras.kt` (canción y notas de voz) + `CapsuleQuestions.kt` + `CapsuleSocial.kt` (reacciones, comentarios, cartas) + `CapsuleTogether.kt` (aportar, abrir juntos, rutas) + `CapsuleInvite.kt` + `HotColdFinder.kt` |
-| Textos de las notificaciones | `notify/Avisos.kt` (con pruebas) |
-| Caliente o frío | `util/Pistas.kt` |
+| Textos de las notificaciones | `notify/NotificationTexts.kt` (con pruebas) |
+| Caliente o frío | `util/Hints.kt` |
 
 ## IA (Claude) · carpeta `ia/`
 La IA de Time Capsule vive en Netlify: **https://timecapsule-ia.netlify.app**.

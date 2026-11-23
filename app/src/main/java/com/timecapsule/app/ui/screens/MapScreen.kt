@@ -27,7 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import com.timecapsule.app.ui.Text
-import com.timecapsule.app.ui.TextoPropio
+import com.timecapsule.app.ui.CustomText
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -172,8 +172,8 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
 
         // Tarjeta del lugar seleccionado
         selected?.let { c ->
-            val note = tl?.lugares?.firstOrNull { p ->
-                (c.placeName != null && p.nombre.contains(c.placeName, ignoreCase = true)) ||
+            val note = tl?.places?.firstOrNull { p ->
+                (c.placeName != null && p.name.contains(c.placeName, ignoreCase = true)) ||
                     (p.lat != null && p.lng != null && kotlin.math.abs(p.lat - c.lat!!) < 0.01 && kotlin.math.abs(p.lng - c.lng!!) < 0.01)
             }
             val samePlace = withPlace.count { LocationUtil.distanceMeters(it.lat!!, it.lng!!, c.lat!!, c.lng!!) < 150 }
@@ -183,11 +183,11 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Meta(Icons.Filled.Place, c.placeName ?: "Lugar sin nombre", Gold)
-                TextoPropio(c.title, style = MaterialTheme.typography.titleLarge, color = Cream)
+                CustomText(c.title, style = MaterialTheme.typography.titleLarge, color = Cream)
                 Text("Guardada el ${c.createdInstant.fmtDate()} · %.5f, %.5f".format(c.lat, c.lng), color = Muted, style = MaterialTheme.typography.bodySmall)
                 Text(c.conditionText(), color = if (c.isOpen) MaterialTheme.colorScheme.primary else Gold)
                 if (samePlace > 1) Text("Tienes $samePlace cápsulas en este lugar.", color = Muted)
-                note?.let { Meta(Icons.Filled.AutoAwesome, it.resumen, Gold) }
+                note?.let { Meta(Icons.Filled.AutoAwesome, it.summary, Gold) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { onOpen(c.id) }) { Text(if (c.isOpen) "Ver recuerdos" else "Ver cápsula") }
                     TextButton(onClick = { selected = null }) { Text("Cerrar") }

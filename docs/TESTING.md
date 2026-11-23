@@ -12,7 +12,7 @@ seguridad de la base de datos (RLS, bcrypt costo 12, ninguna clave secreta en el
 ```bash
 gradlew :app:connectedDebugAndroidTest
 ```
-`EntrarInterfazTest`: la entrada ofrece correo y Google, muestra lo que le falta a la contraseña, no deja crear
+`SignInUiTest`: la entrada ofrece correo y Google, muestra lo que le falta a la contraseña, no deja crear
 una cuenta con contraseña débil y se traduce al inglés. No crea cuentas ni se conecta.
 
 ## Función de IA (21 pruebas)

@@ -20,82 +20,82 @@ import java.util.Locale
 /**
  * IDIOMA (español / inglés)
  * La app se escribe en español. Si se elige inglés, cada texto se traduce justo cuando se
- * va a mostrar, con el diccionario de Traducciones.kt. En español no se hace nada.
+ * va a mostrar, con el diccionario de Translations.kt. En español no se hace nada.
  * {} es un dato cualquiera; {#} solo un número.
  */
-internal class Traductor(dic: Map<String, String>) {
-    private class Patron(val re: Regex, val en: String, val peso: Int)
+internal class Translator(dic: Map<String, String>) {
+    private class TextPattern(val re: Regex, val en: String, val weight: Int)
 
-    private val exactas = dic.filterKeys { !HUECO.containsMatchIn(it) }
-    private val mayusculas = exactas.entries.associate { it.key.uppercase() to it.value.uppercase() }
-    private val patrones = dic.filterKeys { HUECO.containsMatchIn(it) }.map { (es, en) -> compilar(es, en) }.sortedByDescending { it.peso }
-    private val memoria = HashMap<String, String>()
+    private val exactMatches = dic.filterKeys { !PLACEHOLDER.containsMatchIn(it) }
+    private val uppercase = exactMatches.entries.associate { it.key.uppercase() to it.value.uppercase() }
+    private val patterns = dic.filterKeys { PLACEHOLDER.containsMatchIn(it) }.map { (es, en) -> compile(es, en) }.sortedByDescending { it.weight }
+    private val memory = HashMap<String, String>()
 
-    private fun compilar(es: String, en: String): Patron {
-        val partes = Regex("\\{#?\\}|[^{]+|\\{").findAll(es).map { it.value }.toList()
-        val fuente = partes.joinToString("") { p ->
-            when (p) { "{}" -> "(.+?)"; "{#}" -> "($NUMERO)"; else -> Regex.escape(p) }
+    private fun compile(es: String, en: String): TextPattern {
+        val parts = Regex("\\{#?\\}|[^{]+|\\{").findAll(es).map { it.value }.toList()
+        val source = parts.joinToString("") { p ->
+            when (p) { "{}" -> "(.+?)"; "{#}" -> "($NUMBER)"; else -> Regex.escape(p) }
         }
-        return Patron(Regex("^$fuente$", RegexOption.DOT_MATCHES_ALL), en, partes.filter { !HUECO.matches(it) }.sumOf { it.length })
+        return TextPattern(Regex("^$source$", RegexOption.DOT_MATCHES_ALL), en, parts.filter { !PLACEHOLDER.matches(it) }.sumOf { it.length })
     }
 
     @Synchronized
-    fun traducir(texto: String): String {
-        if (texto.none { it.isLetter() }) return texto
-        memoria[texto]?.let { return it }
-        val limpio = texto.trim()
-        val hecho = buscar(limpio, 0)
-        val salida = if (hecho == limpio) texto else texto.takeWhile { it.isWhitespace() } + hecho + texto.takeLastWhile { it.isWhitespace() }
-        if (memoria.size > 2000) memoria.clear()
-        memoria[texto] = salida
-        return salida
+    fun translate(text: String): String {
+        if (text.none { it.isLetter() }) return text
+        memory[text]?.let { return it }
+        val clean = text.trim()
+        val done = search(clean, 0)
+        val output = if (done == clean) text else text.takeWhile { it.isWhitespace() } + done + text.takeLastWhile { it.isWhitespace() }
+        if (memory.size > 2000) memory.clear()
+        memory[text] = output
+        return output
     }
 
-    private fun buscar(limpio: String, nivel: Int): String {
-        exactas[limpio]?.let { return it }
-        mayusculas[limpio]?.let { return it }
-        if (nivel > 3 || limpio.length > LARGO_MAXIMO) return limpio
-        for (p in patrones) {
-            val m = p.re.find(limpio) ?: continue
+    private fun search(clean: String, depth: Int): String {
+        exactMatches[clean]?.let { return it }
+        uppercase[clean]?.let { return it }
+        if (depth > 3 || clean.length > MAX_LENGTH) return clean
+        for (p in patterns) {
+            val m = p.re.find(clean) ?: continue
             var i = 1
-            return HUECO.replace(p.en) { buscar(m.groupValues[i++].trim(), nivel + 1) }
+            return PLACEHOLDER.replace(p.en) { search(m.groupValues[i++].trim(), depth + 1) }
         }
-        if (" · " in limpio) return limpio.split(" · ").joinToString(" · ") { buscar(it, nivel + 1) }
+        if (" · " in clean) return clean.split(" · ").joinToString(" · ") { search(it, depth + 1) }
         // "⚙️ Ajustes": el ícono se deja y se traduce el resto
-        val icono = limpio.takeWhile { !it.isLetter() }
-        if (icono.isNotEmpty() && icono.length < limpio.length) return icono + buscar(limpio.substring(icono.length), nivel + 1)
-        return limpio
+        val icon = clean.takeWhile { !it.isLetter() }
+        if (icon.isNotEmpty() && icon.length < clean.length) return icon + search(clean.substring(icon.length), depth + 1)
+        return clean
     }
 
     private companion object {
-        val HUECO = Regex("\\{#?\\}")
-        const val NUMERO = "[\\d.,:]+(?:\\s?[a-zA-Z%]{1,3})?"
-        const val LARGO_MAXIMO = 260
+        val PLACEHOLDER = Regex("\\{#?\\}")
+        const val NUMBER = "[\\d.,:]+(?:\\s?[a-zA-Z%]{1,3})?"
+        const val MAX_LENGTH = 260
     }
 }
 
-object Idioma {
-    private val actual = mutableStateOf("es")
-    private val traductor by lazy { Traductor(TRADUCCIONES) }
+object Language {
+    private val current = mutableStateOf("es")
+    private val translator by lazy { Translator(TRANSLATIONS) }
 
     /** "es" o "en". Al leerlo en una pantalla, esta se repinta sola si cambia. */
-    val codigo: String get() = actual.value
-    val locale: Locale get() = if (codigo == "en") Locale.ENGLISH else Locale("es")
+    val code: String get() = current.value
+    val locale: Locale get() = if (code == "en") Locale.ENGLISH else Locale("es")
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences("timecapsule_idioma", Context.MODE_PRIVATE)
 
-    fun cargar(ctx: Context) { actual.value = prefs(ctx).getString("idioma", "es") ?: "es" }
+    fun load(ctx: Context) { current.value = prefs(ctx).getString("idioma", "es") ?: "es" }
 
-    fun cambiar(ctx: Context, nuevo: String) {
-        actual.value = nuevo
-        prefs(ctx).edit().putString("idioma", nuevo).apply()
+    fun change(ctx: Context, newValue: String) {
+        current.value = newValue
+        prefs(ctx).edit().putString("idioma", newValue).apply()
     }
 
-    internal fun traducir(texto: String) = if (codigo == "en") traductor.traducir(texto) else texto
+    internal fun translate(text: String) = if (code == "en") translator.translate(text) else text
 }
 
 /** Traduce un texto que no pasa por Text (notificaciones, invitaciones). */
-fun tr(texto: String): String = Idioma.traducir(texto)
+fun tr(text: String): String = Language.translate(text)
 
 /** El Text de siempre, pero en el idioma elegido. */
 @Composable
@@ -124,7 +124,7 @@ fun Text(
 
 /** Para lo que escribió la persona (títulos, cartas, nombres): nunca se traduce. */
 @Composable
-fun TextoPropio(
+fun CustomText(
     text: String,
     modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,

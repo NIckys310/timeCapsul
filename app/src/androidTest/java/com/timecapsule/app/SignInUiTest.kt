@@ -12,7 +12,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import com.timecapsule.app.ui.Idioma
+import com.timecapsule.app.ui.Language
 import com.timecapsule.app.ui.MainActivity
 import org.junit.After
 import org.junit.Before
@@ -25,51 +25,51 @@ import org.junit.runner.RunWith
  * No crean cuentas ni se conectan: solo revisan lo que pasa antes de enviar.
  */
 @RunWith(AndroidJUnit4::class)
-class EntrarInterfazTest {
-    @get:Rule(order = 0) val permisos: GrantPermissionRule = GrantPermissionRule.grant(android.Manifest.permission.POST_NOTIFICATIONS)
+class SignInUiTest {
+    @get:Rule(order = 0) val permissions: GrantPermissionRule = GrantPermissionRule.grant(android.Manifest.permission.POST_NOTIFICATIONS)
     @get:Rule(order = 1) val compose = createEmptyComposeRule()
     private lateinit var app: ActivityScenario<MainActivity>
     private val ctx get() = InstrumentationRegistry.getInstrumentation().targetContext
 
-    @Before fun abrir() {
-        Idioma.cambiar(ctx, "es")
+    @Before fun openNow() {
+        Language.change(ctx, "es")
         app = ActivityScenario.launch(MainActivity::class.java)
         compose.waitUntil(15_000) { compose.onAllNodes(hasText("Continuar con Google")).fetchSemanticsNodes().isNotEmpty() }
     }
 
-    @After fun cerrar() {
-        Idioma.cambiar(ctx, "es")
+    @After fun close() {
+        Language.change(ctx, "es")
         app.close()
     }
 
-    private fun campo(etiqueta: String) = compose.onNode(hasSetTextAction() and hasText(etiqueta))
+    private fun field(label: String) = compose.onNode(hasSetTextAction() and hasText(label))
 
-    @Test fun laEntradaOfreceCorreoYGoogle() {
+    @Test fun signInOffersEmailAndGoogle() {
         compose.onNodeWithText("Guarda hoy lo que querrás revivir mañana.").assertIsDisplayed()
-        campo("Correo").assertIsDisplayed()
-        campo("Contraseña").assertIsDisplayed()
+        field("Correo").assertIsDisplayed()
+        field("Contraseña").assertIsDisplayed()
         compose.onNodeWithText("Continuar con Google").performScrollTo().assertIsDisplayed()
     }
 
-    @Test fun crearCuentaMuestraLoQueLeFaltaALaContrasena() {
+    @Test fun signUpShowsWhatThePasswordIsMissing() {
         compose.onNodeWithText("Crear cuenta").performClick()
-        campo("Contraseña").performTextInput("capsula")
+        field("Contraseña").performTextInput("capsula")
         compose.onNodeWithText("○ Al menos 10 caracteres").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("✓ Una letra minúscula").assertIsDisplayed()
         compose.onNodeWithText("○ Un símbolo (!@#$…)").assertIsDisplayed()
     }
 
-    @Test fun noDejaCrearUnaCuentaConContrasenaDebil() {
+    @Test fun doesNotAllowSignUpWithAWeakPassword() {
         compose.onNodeWithText("Crear cuenta").performClick()
-        campo("Tu nombre").performTextInput("Prueba")
-        campo("Correo").performTextInput("prueba@ejemplo.invalid")
-        campo("Contraseña").performTextInput("Capsula2026")
+        field("Tu nombre").performTextInput("Prueba")
+        field("Correo").performTextInput("prueba@ejemplo.invalid")
+        field("Contraseña").performTextInput("Capsula2026")
         compose.onNodeWithText("Crear mi cuenta").performScrollTo().performClick()
         compose.onNodeWithText("Tu contraseña aún no es segura. Mira lo que le falta.").performScrollTo().assertIsDisplayed()
     }
 
-    @Test fun enInglesLaEntradaSeTraduce() {
-        compose.runOnUiThread { Idioma.cambiar(ctx, "en") }
+    @Test fun inEnglishTheSignInIsTranslated() {
+        compose.runOnUiThread { Language.change(ctx, "en") }
         compose.onNodeWithText("Continue with Google").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Save today what you will want to relive tomorrow.").assertIsDisplayed()
     }

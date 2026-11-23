@@ -21,11 +21,11 @@ android {
     // Llave PRIVADA de producción: vive fuera del repositorio y su contraseña nunca se escribe aquí.
     // Se lee de ~/.gradle/gradle.properties (TC_STORE_FILE, TC_STORE_PASSWORD_DPAPI, TC_KEY_ALIAS)
     // o de variables de entorno con el mismo nombre (GitHub Actions). Ver docs/SIGNING.md
-    val llave = providers.gradleProperty("TC_STORE_FILE").orElse(providers.environmentVariable("TC_STORE_FILE")).orNull
+    val keyStoreFile = providers.gradleProperty("TC_STORE_FILE").orElse(providers.environmentVariable("TC_STORE_FILE")).orNull
     signingConfigs {
-        if (llave != null) create("produccion") {
-            storeFile = file(llave)
-            storePassword = contrasenaDeLaLlave("TC")
+        if (keyStoreFile != null) create("production") {
+            storeFile = file(keyStoreFile)
+            storePassword = readKeyPassword("TC")
             keyAlias = providers.gradleProperty("TC_KEY_ALIAS").orElse(providers.environmentVariable("TC_KEY_ALIAS")).get()
             keyPassword = storePassword
         }
@@ -34,7 +34,7 @@ android {
     buildTypes {
         release {
             // Sin la llave (por ejemplo en GitHub) el APK de producción sale sin firmar
-            signingConfig = signingConfigs.findByName("produccion")
+            signingConfig = signingConfigs.findByName("production")
             isMinifyEnabled = true          // R8: quita código sin usar y lo ofusca
             isShrinkResources = true        // quita imágenes y textos sin usar
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -120,13 +120,13 @@ dependencies {
  *   solo el mismo usuario de Windows en este mismo equipo puede descifrarla.
  * - En GitHub Actions: la variable secreta TC_STORE_PASSWORD.
  */
-fun contrasenaDeLaLlave(prefijo: String): String {
-    providers.environmentVariable("${prefijo}_STORE_PASSWORD").orNull?.let { return it }
-    val cifrada = providers.gradleProperty("${prefijo}_STORE_PASSWORD_DPAPI").orNull
-        ?: error("Falta ${prefijo}_STORE_PASSWORD_DPAPI en ~/.gradle/gradle.properties (ver SIGNING.md)")
+fun readKeyPassword(prefix: String): String {
+    providers.environmentVariable("${prefix}_STORE_PASSWORD").orNull?.let { return it }
+    val encrypted = providers.gradleProperty("${prefix}_STORE_PASSWORD_DPAPI").orNull
+        ?: error("Falta ${prefix}_STORE_PASSWORD_DPAPI en ~/.gradle/gradle.properties (ver SIGNING.md)")
     val ps = "Add-Type -AssemblyName System.Security; " +
         "[Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect(" +
-        "[Convert]::FromBase64String('$cifrada'), \$null, 'CurrentUser'))"
+        "[Convert]::FromBase64String('$encrypted'), \$null, 'CurrentUser'))"
     return providers.exec { commandLine("powershell", "-NoProfile", "-NonInteractive", "-Command", ps) }
         .standardOutput.asText.get().trim()
 }

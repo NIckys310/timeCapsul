@@ -25,7 +25,7 @@ class UnlockWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
         val id = inputData.getString("id") ?: return Result.success()
         val title = inputData.getString("title").orEmpty()
         val place = inputData.getString("place")
-        Notifier.show(applicationContext, id.hashCode(), Notifier.CH_UNLOCK, Avisos.tituloApertura(title), Avisos.textoApertura(place), id)
+        Notifier.show(applicationContext, id.hashCode(), Notifier.CH_UNLOCK, NotificationTexts.openingTitle(title), NotificationTexts.openingText(place), id)
         return Result.success()
     }
 
@@ -36,11 +36,11 @@ class UnlockWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
             if (delay.isNegative) return
             val req = OneTimeWorkRequestBuilder<UnlockWorker>()
                 .setInitialDelay(delay.toMillis(), TimeUnit.MILLISECONDS)
-                .setInputData(workDataOf("id" to c.id, "title" to c.title, "place" to Avisos.lugarParaAbrir(c)))
+                .setInputData(workDataOf("id" to c.id, "title" to c.title, "place" to NotificationTexts.placeToOpen(c)))
                 .build()
             WorkManager.getInstance(ctx).enqueueUniqueWork("unlock_${c.id}", ExistingWorkPolicy.REPLACE, req)
             // Cuenta regresiva: 1 semana, 1 día y 1 hora antes
-            Avisos.recordatorios(delay).forEach { (wait, label) ->
+            NotificationTexts.reminders(delay).forEach { (wait, label) ->
                 val r = OneTimeWorkRequestBuilder<ReminderWorker>()
                     .setInitialDelay(wait.toMillis(), TimeUnit.MILLISECONDS)
                     .setInputData(workDataOf("id" to c.id, "title" to c.title, "label" to label))
@@ -51,7 +51,7 @@ class UnlockWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
         fun cancel(ctx: Context, id: String) {
             val wm = WorkManager.getInstance(ctx)
             wm.cancelUniqueWork("unlock_$id")
-            Avisos.CUENTA_REGRESIVA.forEach { (_, label) -> wm.cancelUniqueWork("remind_${label}_$id") }
+            NotificationTexts.COUNTDOWN.forEach { (_, label) -> wm.cancelUniqueWork("remind_${label}_$id") }
         }
     }
 }
@@ -62,7 +62,7 @@ class ReminderWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
         val id = inputData.getString("id") ?: return Result.success()
         val title = inputData.getString("title").orEmpty()
         val label = inputData.getString("label").orEmpty()
-        Notifier.show(applicationContext, ("r$label$id").hashCode(), Notifier.CH_REMINDER, Avisos.tituloRecordatorio(label), Avisos.textoRecordatorio(title), id)
+        Notifier.show(applicationContext, ("r$label$id").hashCode(), Notifier.CH_REMINDER, NotificationTexts.reminderTitle(label), NotificationTexts.reminderText(title), id)
         return Result.success()
     }
 }
@@ -94,8 +94,8 @@ object Sync {
         val me = Repo.userId()
         val known = Prefs.knownIds(ctx)
         if (notifyNew && Prefs.hasSynced(ctx)) {
-            Avisos.nuevasCompartidas(list, known, me).forEach { c ->
-                Notifier.show(ctx, ("s" + c.id).hashCode(), Notifier.CH_SHARE, Avisos.tituloCompartida(c), Avisos.textoCompartida(c), c.id)
+            NotificationTexts.newShared(list, known, me).forEach { c ->
+                Notifier.show(ctx, ("s" + c.id).hashCode(), Notifier.CH_SHARE, NotificationTexts.sharedTitle(c), NotificationTexts.sharedText(c), c.id)
             }
         }
         Prefs.setKnownIds(ctx, list.map { it.id }.toSet())
@@ -121,8 +121,8 @@ object Sync {
         val p = ctx.getSharedPreferences("timecapsule", Context.MODE_PRIVATE)
         val since = p.getString("activitySince", null) ?: Instant.now().toString().also { p.edit().putString("activitySince", it).apply(); return }
         val list = runCatching { Repo.recentActivity(since) }.getOrDefault(emptyList())
-        list.take(Avisos.MAX_ACTIVIDAD).forEach { a ->
-            Notifier.show(ctx, (a.kind + a.capsuleId + a.at).hashCode(), Notifier.CH_ACTIVITY, "“${a.title}”", Avisos.textoActividad(a), a.capsuleId)
+        list.take(NotificationTexts.MAX_ACTIVITY).forEach { a ->
+            Notifier.show(ctx, (a.kind + a.capsuleId + a.at).hashCode(), Notifier.CH_ACTIVITY, "“${a.title}”", NotificationTexts.activityText(a), a.capsuleId)
         }
         p.edit().putString("activitySince", Instant.now().toString()).apply()
     }

@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Plantillas de carta y preguntas para el futuro. */
-class PlantillasTest {
+class TemplatesTest {
     @Test fun `hay 6 plantillas de carta`() = assertEquals(6, LetterTemplates.all.size)
 
     @Test fun `las plantillas no repiten identificador`() {
@@ -15,10 +15,10 @@ class PlantillasTest {
     }
 
     @Test fun `cada plantilla tiene nombre y un inicio para completar`() {
-        for ((id, plantilla) in LetterTemplates.all) {
-            val (nombre, texto) = plantilla
-            assertTrue(id, nombre.isNotBlank())
-            assertTrue(id, texto.lines().size >= 3 && "…" in texto)
+        for ((id, template) in LetterTemplates.all) {
+            val (name, text) = template
+            assertTrue(id, name.isNotBlank())
+            assertTrue(id, text.lines().size >= 3 && "…" in text)
         }
     }
 

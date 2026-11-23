@@ -22,7 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import com.timecapsule.app.ui.Text
-import com.timecapsule.app.ui.TextoPropio
+import com.timecapsule.app.ui.CustomText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,7 +38,7 @@ import com.timecapsule.app.data.AppSettings
 import androidx.compose.material3.FilterChip
 import com.timecapsule.app.geo.GeofenceManager
 import com.timecapsule.app.notify.Notifier
-import com.timecapsule.app.ui.Idioma
+import com.timecapsule.app.ui.Language
 import com.timecapsule.app.ui.MainViewModel
 import com.timecapsule.app.ui.theme.Cream
 import com.timecapsule.app.ui.theme.Gold
@@ -68,8 +68,8 @@ fun ProfileScreen(vm: MainViewModel) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Card {
-            TextoPropio(Repo.userName(), style = MaterialTheme.typography.headlineSmall, color = Cream)
-            TextoPropio(Repo.userEmail(), color = Muted)
+            CustomText(Repo.userName(), style = MaterialTheme.typography.headlineSmall, color = Cream)
+            CustomText(Repo.userEmail(), color = Muted)
         }
         Card {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -123,7 +123,7 @@ private fun LookCard() {
     Card {
         Text("Apariencia y accesibilidad", style = MaterialTheme.typography.titleMedium, color = Cream)
         Text("Idioma", color = Muted, style = MaterialTheme.typography.bodySmall)
-        Choice(listOf("es" to "Español", "en" to "English"), Idioma.codigo) { v -> Idioma.cambiar(ctx, v) }
+        Choice(listOf("es" to "Español", "en" to "English"), Language.code) { v -> Language.change(ctx, v) }
         Text("Tema", color = Muted, style = MaterialTheme.typography.bodySmall)
         Choice(listOf("system" to "Automático", "light" to "Claro", "dark" to "Oscuro"), look.theme) { v -> AppSettings.update(ctx) { it.copy(theme = v) } }
         Text("Tamaño del texto", color = Muted, style = MaterialTheme.typography.bodySmall)

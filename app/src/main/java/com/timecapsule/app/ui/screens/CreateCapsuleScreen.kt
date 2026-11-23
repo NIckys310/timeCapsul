@@ -1,6 +1,6 @@
 package com.timecapsule.app.ui.screens
 
-import com.timecapsule.app.util.Fallos
+import com.timecapsule.app.util.ErrorLog
 
 import com.timecapsule.app.ui.components.paper
 import androidx.compose.ui.graphics.Color
@@ -120,8 +120,8 @@ import android.net.Uri as AUri
 import kotlinx.coroutines.delay
 import com.timecapsule.app.data.PickedItem
 import com.timecapsule.app.data.Repo
-import com.timecapsule.app.data.ReglasCapsula
-import com.timecapsule.app.data.FormularioCapsula
+import com.timecapsule.app.data.CapsuleRules
+import com.timecapsule.app.data.CapsuleForm
 import com.timecapsule.app.ui.theme.Cream
 import com.timecapsule.app.ui.theme.Gold
 import com.timecapsule.app.ui.theme.Muted
@@ -143,18 +143,18 @@ import java.time.ZonedDateTime
 
 /**
  * NUEVA CÁPSULA · solo dibuja.
- * El estado y la lógica viven en NuevaCapsulaViewModel (sobreviven a girar el celular);
- * las secciones están en CreateCapsuleSections.kt y las reglas en data/NuevaCapsula.kt.
+ * El estado y la lógica viven en NewCapsuleViewModel (sobreviven a girar el celular);
+ * las secciones están en CreateCapsuleSections.kt y las reglas en data/NewCapsuleForm.kt.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CreateCapsuleScreen(
     onBack: () -> Unit,
     onCreated: (String) -> Unit,
-    vm: NuevaCapsulaViewModel = viewModel(factory = NuevaCapsulaViewModel.Fabrica),
+    vm: NewCapsuleViewModel = viewModel(factory = NewCapsuleViewModel.Factory),
 ) {
     val ctx = LocalContext.current
-    LaunchedEffect(vm.creada) { vm.creada?.let(onCreated) }
+    LaunchedEffect(vm.created) { vm.created?.let(onCreated) }
 
     // Al volver de YouTube/Spotify: si copiaste el enlace de la canción, se pega solo
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -162,26 +162,26 @@ fun CreateCapsuleScreen(
         val obs = LifecycleEventObserver { _, e ->
             if (e == Lifecycle.Event.ON_RESUME) {
                 val cb = ctx.getSystemService(ClipboardManager::class.java)
-                vm.pegarCancionSiHay(runCatching { cb?.primaryClip?.getItemAt(0)?.text?.toString() }.getOrNull().orEmpty())
+                vm.pasteSongIfAny(runCatching { cb?.primaryClip?.getItemAt(0)?.text?.toString() }.getOrNull().orEmpty())
             }
         }
         lifecycle.addObserver(obs)
         onDispose { lifecycle.removeObserver(obs) }
     }
 
-    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> vm.alternarGrabacion(ok) }
-    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(20)) { vm.agregarMedios(it) }
-    val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { vm.fotoTomada(it) }
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> vm.toggleRecording(ok) }
+    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(20)) { vm.addMedia(it) }
+    val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { vm.takenPhoto(it) }
     val locPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { res ->
-        if (res[Manifest.permission.ACCESS_FINE_LOCATION] == true || res[Manifest.permission.ACCESS_COARSE_LOCATION] == true) vm.ubicar()
-        else vm.cambiarUsarLugar(false)
+        if (res[Manifest.permission.ACCESS_FINE_LOCATION] == true || res[Manifest.permission.ACCESS_COARSE_LOCATION] == true) vm.locate()
+        else vm.changeUsePlace(false)
     }
-    fun ubicarConPermiso() {
-        if (LocationUtil.hasFine(ctx)) vm.ubicar()
+    fun locateWithPermission() {
+        if (LocationUtil.hasFine(ctx)) vm.locate()
         else locPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
     }
     // Al abrir la pantalla por primera vez: registra el lugar (o pide permiso)
-    LaunchedEffect(Unit) { if (vm.lat == null && vm.usarLugar) ubicarConPermiso() }
+    LaunchedEffect(Unit) { if (vm.lat == null && vm.usePlace) locateWithPermission() }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -189,7 +189,7 @@ fun CreateCapsuleScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Nueva cápsula") },
-                navigationIcon = { IconButton(onClick = onBack, enabled = !vm.guardando) { Icon(Icons.AutoMirrored.Filled.ArrowBack, com.timecapsule.app.ui.tr("Volver")) } },
+                navigationIcon = { IconButton(onClick = onBack, enabled = !vm.saving) { Icon(Icons.AutoMirrored.Filled.ArrowBack, com.timecapsule.app.ui.tr("Volver")) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
@@ -198,97 +198,97 @@ fun CreateCapsuleScreen(
             Modifier.padding(pad).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            if (vm.borradorRecuperado) BorradorRecuperado { vm.empezarDeNuevo() }
-            SeccionTitulo(vm.titulo, vm::cambiarTitulo, vm.ideasDeTitulo, pensando = vm.iaOcupada == "titulo",
-                puedeSugerir = vm.medios.any { it.kind == "photo" } || vm.carta.isNotBlank(), iaOcupada = vm.iaOcupada != null, onSugerir = vm::sugerirTitulo)
-            SeccionCarta(vm.carta, vm::cambiarCarta, pensando = vm.iaOcupada == "carta", iaOcupada = vm.iaOcupada != null, onAyuda = { vm.mejorarCarta("cálido") },
-                puedeDeshacer = vm.cartaAnterior != null, onDeshacer = vm::deshacerCarta,
-                plantilla = vm.plantilla, onPlantilla = vm::usarPlantilla)
-            SeccionNotasDeVoz(vm.notasDeVoz, onBorrar = vm::borrarNota, grabando = vm.grabando, ms = vm.msGrabados, onGrabar = {
-                if (vm.grabando) vm.alternarGrabacion(true) else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            if (vm.recoveredDraft) RecoveredDraft { vm.startOver() }
+            TitleSection(vm.title, vm::changeTitle, vm.titleIdeas, thinking = vm.aiBusy == "titulo",
+                canSuggest = vm.media.any { it.kind == "photo" } || vm.letter.isNotBlank(), aiBusy = vm.aiBusy != null, onSuggest = vm::suggestTitle)
+            LetterSection(vm.letter, vm::changeLetter, thinking = vm.aiBusy == "carta", aiBusy = vm.aiBusy != null, onHelp = { vm.improveLetter("cálido") },
+                canUndo = vm.previousLetter != null, onUndo = vm::undoLetter,
+                template = vm.template, onTemplate = vm::useTemplate)
+            VoiceNotesSection(vm.voiceNotes, onDelete = vm::deleteNote, recordingNow = vm.recordingNow, ms = vm.recordedMs, onRecord = {
+                if (vm.recordingNow) vm.toggleRecording(true) else micPermission.launch(Manifest.permission.RECORD_AUDIO)
             })
-            SeccionCancion(vm.cancion, vm::cambiarCancion, vm.enlaceCancion, vm::cambiarEnlaceCancion, onBuscar = { base -> openSearch(ctx, base, vm.cancion) })
-            SeccionPreguntas(vm.preguntas, onQuitar = vm::quitarPregunta, onAgregar = vm::agregarPregunta)
-            SeccionMedios(vm.medios,
-                onGaleria = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
-                onCamara = {
+            SongSection(vm.song, vm::changeSong, vm.songLink, vm::changeSongLink, onSearch = { base -> openSearch(ctx, base, vm.song) })
+            QuestionsSection(vm.questions, onRemove = vm::removeQuestion, onAdd = vm::addQuestion)
+            MediaSection(vm.media,
+                onGallery = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
+                onCamera = {
                     val dir = File(ctx.cacheDir, "camera").apply { mkdirs() }
                     val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", File(dir, "foto_${System.currentTimeMillis()}.jpg"))
-                    vm.fotoEnCamara = uri
+                    vm.cameraPhoto = uri
                     takePhoto.launch(uri)
                 },
-                onQuitar = vm::quitarMedio)
+                onRemove = vm::removeMedia)
 
             HorizontalDivider()
-            SeccionFecha(vm.usarFecha, vm::cambiarUsarFecha, vm.abreEl, vm::cambiarAbreEl, onElegirFecha = { vm.verFecha = true })
-            SeccionClave(vm.usarClave, vm::cambiarUsarClave, vm.clave, vm::cambiarClave, vm.clave2, vm::cambiarClave2)
+            DateSection(vm.useDate, vm::changeUseDate, vm.opensOn, vm::changeOpensOn, onPickDate = { vm.showDate = true })
+            KeySection(vm.useKey, vm::changeUseKey, vm.key, vm::changeKey, vm.key2, vm::changeKey2)
 
             HorizontalDivider()
-            SeccionLugar(
-                usarLugar = vm.usarLugar, onUsarLugar = { on -> vm.cambiarUsarLugar(on); if (on && vm.lat == null) ubicarConPermiso() },
-                buscando = vm.buscandoLugar, lat = vm.lat, lng = vm.lng, precision = vm.precision, direccion = vm.direccion,
-                cercanos = vm.cercanos, nombre = vm.nombreLugar, onNombre = vm::cambiarNombreLugar,
-                onActualizar = ::ubicarConPermiso,
-                soloAqui = vm.soloEnElLugar, onSoloAqui = vm::cambiarSoloEnElLugar, radio = vm.radio, onRadio = vm::cambiarRadio,
-                rutas = vm.rutas, rutaId = vm.rutaId, onRuta = vm::cambiarRuta,
-                onCrearRuta = { vm.crearRuta(it) },
+            PlaceSection(
+                usePlace = vm.usePlace, onUsePlace = { on -> vm.changeUsePlace(on); if (on && vm.lat == null) locateWithPermission() },
+                searching = vm.searchingPlace, lat = vm.lat, lng = vm.lng, precision = vm.precision, address = vm.address,
+                nearbyPlaces = vm.nearbyPlaces, name = vm.placeNameText, onName = vm::changePlaceName,
+                onRefresh = ::locateWithPermission,
+                onlyHere = vm.onlyAtPlace, onOnlyHere = vm::changeOnlyAtPlace, radius = vm.radius, onRadius = vm::changeRadius,
+                routes = vm.routes, routeIdValue = vm.routeIdValue, onRoute = vm::changeRoute,
+                onCreateRoute = { vm.createNewRoute(it) },
             )
 
             HorizontalDivider()
-            SeccionCompartir(vm.correos, vm::cambiarCorreos, vm.colaborativa, vm::cambiarColaborativa, vm.abrirJuntos, vm::cambiarAbrirJuntos)
+            ShareSection(vm.emails, vm::changeEmails, vm.collaborative, vm::changeCollaborative, vm.openTogether, vm::changeOpenTogether)
 
             vm.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            if (vm.guardando) {
-                LinearProgressIndicator(progress = { vm.progreso }, modifier = Modifier.fillMaxWidth())
-                Text(vm.textoProgreso, color = Muted)
+            if (vm.saving) {
+                LinearProgressIndicator(progress = { vm.progress }, modifier = Modifier.fillMaxWidth())
+                Text(vm.progressText, color = Muted)
             }
-            Button(onClick = vm::sellar, enabled = !vm.guardando, modifier = Modifier.fillMaxWidth().height(54.dp)) {
-                Text(if (vm.guardando) "Guardando…" else "Sellar cápsula")
+            Button(onClick = vm::seal, enabled = !vm.saving, modifier = Modifier.fillMaxWidth().height(54.dp)) {
+                Text(if (vm.saving) "Guardando…" else "Sellar cápsula")
             }
             Spacer(Modifier.height(24.dp))
         }
     }
 
     // ---------- Selector de fecha y hora ----------
-    if (vm.verFecha) {
+    if (vm.showDate) {
         val todayUtc = LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         val state = rememberDatePickerState(
-            initialSelectedDateMillis = vm.abreEl?.let { it.atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() },
+            initialSelectedDateMillis = vm.opensOn?.let { it.atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() },
             selectableDates = object : SelectableDates {
                 override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= todayUtc
             },
         )
         DatePickerDialog(
-            onDismissRequest = { vm.verFecha = false },
+            onDismissRequest = { vm.showDate = false },
             confirmButton = {
                 TextButton(onClick = {
                     state.selectedDateMillis?.let {
-                        vm.fechaElegida = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
-                        vm.verFecha = false; vm.verHora = true
+                        vm.chosenDate = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
+                        vm.showDate = false; vm.showTime = true
                     }
                 }) { Text("Siguiente") }
             },
-            dismissButton = { TextButton(onClick = { vm.verFecha = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { vm.showDate = false }) { Text("Cancelar") } },
         ) { DatePicker(state) }
     }
-    if (vm.verHora) {
+    if (vm.showTime) {
         val t = rememberTimePickerState(initialHour = 9, initialMinute = 0, is24Hour = false)
         AlertDialog(
-            onDismissRequest = { vm.verHora = false },
+            onDismissRequest = { vm.showTime = false },
             title = { Text("¿A qué hora?") },
             text = { TimePicker(t) },
             confirmButton = {
                 TextButton(onClick = {
-                    vm.fechaElegida?.let { d -> vm.cambiarAbreEl(d.atTime(LocalTime.of(t.hour, t.minute)).atZone(ZoneId.systemDefault()).toInstant()) }
-                    vm.verHora = false
+                    vm.chosenDate?.let { d -> vm.changeOpensOn(d.atTime(LocalTime.of(t.hour, t.minute)).atZone(ZoneId.systemDefault()).toInstant()) }
+                    vm.showTime = false
                 }) { Text("Listo") }
             },
-            dismissButton = { TextButton(onClick = { vm.verHora = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { vm.showTime = false }) { Text("Cancelar") } },
         )
     }
 }
 
 /** Abre YouTube o Spotify buscando la canción. */
 private fun openSearch(ctx: android.content.Context, base: String, q: String) {
-    runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, AUri.parse(base + AUri.encode(q.trim())))) }.onFailure { Fallos.registrar("CreateCapsuleScreen:291", it) }
+    runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, AUri.parse(base + AUri.encode(q.trim())))) }.onFailure { ErrorLog.record("CreateCapsuleScreen:291", it) }
 }

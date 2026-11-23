@@ -1,6 +1,6 @@
 package com.timecapsule.app.ui.components
 
-import com.timecapsule.app.util.Fallos
+import com.timecapsule.app.util.ErrorLog
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
@@ -87,8 +87,8 @@ fun AlbumPlayer(c: Capsule, photoPaths: List<String>, onClose: () -> Unit) {
             } else AnimatedContent(step, transitionSpec = { fadeIn(tween(900)) togetherWith fadeOut(tween(900)) }, label = "álbum") { s ->
                 when {
                     s == -1 -> Slide(title = c.title, text = album?.intro ?: c.placeName.orEmpty())
-                    s >= n -> Slide(title = "Fin", text = album?.cierre ?: "Gracias por guardar este recuerdo.")
-                    else -> KenBurns(paths[s], album?.fotos?.getOrNull(s), s)
+                    s >= n -> Slide(title = "Fin", text = album?.closing ?: "Gracias por guardar este recuerdo.")
+                    else -> KenBurns(paths[s], album?.photos?.getOrNull(s), s)
                 }
             }
             // Puntos de avance
@@ -99,7 +99,7 @@ fun AlbumPlayer(c: Capsule, photoPaths: List<String>, onClose: () -> Unit) {
             if (!c.songUrl.isNullOrBlank() || !c.songTitle.isNullOrBlank()) TextButton(
                 onClick = {
                     val url = c.songUrl?.takeIf { it.startsWith("http") } ?: "https://www.youtube.com/results?search_query=" + android.net.Uri.encode(c.songTitle.orEmpty())
-                    runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) }.onFailure { Fallos.registrar("AlbumPlayer:100", it) }
+                    runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) }.onFailure { ErrorLog.record("AlbumPlayer:100", it) }
                 },
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp),
             ) { Icon(Icons.Filled.MusicNote, null, tint = p.gold); Text(" Poner la canción: ${c.songTitle ?: "abrir enlace"}", color = p.gold) }

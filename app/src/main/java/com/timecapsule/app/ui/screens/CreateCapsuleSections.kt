@@ -59,7 +59,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Switch
 import com.timecapsule.app.ui.Text
-import com.timecapsule.app.ui.TextoPropio
+import com.timecapsule.app.ui.CustomText
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
@@ -136,274 +136,274 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-import com.timecapsule.app.data.ReglasCapsula
-import com.timecapsule.app.data.FormularioCapsula
+import com.timecapsule.app.data.CapsuleRules
+import com.timecapsule.app.data.CapsuleForm
 
 /* =========================================================
    NUEVA CÁPSULA · secciones de la pantalla
    Cada sección solo muestra sus datos y avisa los cambios; la pantalla
    (CreateCapsuleScreen) guarda el estado y las acomoda en orden.
-   Las reglas (límites, validación) están en data/NuevaCapsula.kt.
+   Las reglas (límites, validación) están en data/NewCapsuleForm.kt.
    ========================================================= */
 
 /** Teclado con mayúscula al iniciar frases. Acepta tildes, ñ, ü y cualquier carácter. */
-internal val tecladoTexto = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, keyboardType = KeyboardType.Text)
+internal val textKeyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, keyboardType = KeyboardType.Text)
 
 @Composable
-private fun Ayuda(texto: String) = Text(texto, color = Muted, style = MaterialTheme.typography.bodySmall)
+private fun Help(text: String) = Text(text, color = Muted, style = MaterialTheme.typography.bodySmall)
 
 /* ---------------- Borrador recuperado ---------------- */
 @Composable
-internal fun BorradorRecuperado(onEmpezarDeNuevo: () -> Unit) {
+internal fun RecoveredDraft(onStartOver: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text("✓ Recuperamos tu borrador", Modifier.weight(1f), color = Gold)
-        TextButton(onClick = onEmpezarDeNuevo) { Text("Empezar de nuevo") }
+        TextButton(onClick = onStartOver) { Text("Empezar de nuevo") }
     }
 }
 
 /* ---------------- Título (con ideas de la IA) ---------------- */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun SeccionTitulo(
-    titulo: String, onTitulo: (String) -> Unit,
-    ideas: List<String>, pensando: Boolean, puedeSugerir: Boolean, iaOcupada: Boolean, onSugerir: () -> Unit,
+internal fun TitleSection(
+    title: String, onTitle: (String) -> Unit,
+    ideas: List<String>, thinking: Boolean, canSuggest: Boolean, aiBusy: Boolean, onSuggest: () -> Unit,
 ) {
-    OutlinedTextField(titulo, onTitulo, label = { Text("Título") }, singleLine = true,
-        keyboardOptions = tecladoTexto,
+    OutlinedTextField(title, onTitle, label = { Text("Título") }, singleLine = true,
+        keyboardOptions = textKeyboard,
         placeholder = { Text("Cena de aniversario, Grado 2026…") }, modifier = Modifier.fillMaxWidth())
     Row(verticalAlignment = Alignment.CenterVertically) {
-        OutlinedButton(onClick = onSugerir, enabled = !iaOcupada && puedeSugerir) {
-            if (pensando) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
+        OutlinedButton(onClick = onSuggest, enabled = !aiBusy && canSuggest) {
+            if (thinking) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
             Spacer(Modifier.width(6.dp)); Text("Sugerir título y portada")
         }
     }
     if (ideas.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ideas.forEach { t -> FilterChip(selected = titulo == t, onClick = { onTitulo(t) }, label = { Text(t) }) }
+        ideas.forEach { t -> FilterChip(selected = title == t, onClick = { onTitle(t) }, label = { Text(t) }) }
     }
 }
 
 /* ---------------- Carta (con ayuda de la IA y plantillas) ---------------- */
 @Composable
-internal fun SeccionCarta(
-    carta: String, onCarta: (String) -> Unit,
-    pensando: Boolean, iaOcupada: Boolean, onAyuda: () -> Unit, puedeDeshacer: Boolean, onDeshacer: () -> Unit,
-    plantilla: String?, onPlantilla: (id: String, texto: String) -> Unit,
+internal fun LetterSection(
+    letter: String, onLetter: (String) -> Unit,
+    thinking: Boolean, aiBusy: Boolean, onHelp: () -> Unit, canUndo: Boolean, onUndo: () -> Unit,
+    template: String?, onTemplate: (id: String, text: String) -> Unit,
 ) {
-    OutlinedTextField(carta, onCarta, label = { Text("Carta para el futuro") },
-        keyboardOptions = tecladoTexto,
+    OutlinedTextField(letter, onLetter, label = { Text("Carta para el futuro") },
+        keyboardOptions = textKeyboard,
         placeholder = { Text("Querido yo del futuro…") }, minLines = 5, modifier = Modifier.fillMaxWidth())
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedButton(onClick = onAyuda, enabled = !iaOcupada) {
-            if (pensando) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
-            Spacer(Modifier.width(6.dp)); Text(if (carta.isBlank()) "Escribe un borrador" else "Mejorar mi carta")
+        OutlinedButton(onClick = onHelp, enabled = !aiBusy) {
+            if (thinking) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Filled.AutoAwesome, null)
+            Spacer(Modifier.width(6.dp)); Text(if (letter.isBlank()) "Escribe un borrador" else "Mejorar mi carta")
         }
-        if (puedeDeshacer) TextButton(onClick = onDeshacer) { Text("Deshacer") }
+        if (canUndo) TextButton(onClick = onUndo) { Text("Deshacer") }
     }
-    Ayuda("¿Te ayudo a empezar? Elige una plantilla:")
+    Help("¿Te ayudo a empezar? Elige una plantilla:")
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         itemsIndexed(LetterTemplates.all) { _, (id, par) ->
-            FilterChip(selected = plantilla == id, onClick = { onPlantilla(id, par.second) }, label = { Text(par.first) })
+            FilterChip(selected = template == id, onClick = { onTemplate(id, par.second) }, label = { Text(par.first) })
         }
     }
 }
 
 /* ---------------- Notas de voz ---------------- */
 @Composable
-internal fun SeccionNotasDeVoz(notas: List<File>, onBorrar: (Int) -> Unit, grabando: Boolean, ms: Long, onGrabar: () -> Unit) {
+internal fun VoiceNotesSection(notes: List<File>, onDelete: (Int) -> Unit, recordingNow: Boolean, ms: Long, onRecord: () -> Unit) {
     Text("Notas de voz", style = MaterialTheme.typography.titleMedium)
-    notas.forEachIndexed { i, f -> VoiceNotePlayer(f.absolutePath, "Nota ${i + 1}", onDelete = { onBorrar(i) }) }
-    if (notas.size < ReglasCapsula.MAX_NOTAS_DE_VOZ) OutlinedButton(onClick = onGrabar, modifier = Modifier.fillMaxWidth()) {
-        Icon(if (grabando) Icons.Filled.Stop else Icons.Filled.Mic, null,
-            tint = if (grabando) MaterialTheme.colorScheme.error else androidx.compose.material3.LocalContentColor.current)
+    notes.forEachIndexed { i, f -> VoiceNotePlayer(f.absolutePath, "Nota ${i + 1}", onDelete = { onDelete(i) }) }
+    if (notes.size < CapsuleRules.MAX_VOICE_NOTES) OutlinedButton(onClick = onRecord, modifier = Modifier.fillMaxWidth()) {
+        Icon(if (recordingNow) Icons.Filled.Stop else Icons.Filled.Mic, null,
+            tint = if (recordingNow) MaterialTheme.colorScheme.error else androidx.compose.material3.LocalContentColor.current)
         Spacer(Modifier.width(8.dp))
-        Text(if (grabando) "Detener · ${fmtDuration(ms)} / 3:00" else "Grabar una nota de voz")
+        Text(if (recordingNow) "Detener · ${fmtDuration(ms)} / 3:00" else "Grabar una nota de voz")
     }
 }
 
 /* ---------------- Canción del momento ---------------- */
 @Composable
-internal fun SeccionCancion(
-    titulo: String, onTitulo: (String) -> Unit, enlace: String, onEnlace: (String) -> Unit, onBuscar: (base: String) -> Unit,
+internal fun SongSection(
+    title: String, onTitle: (String) -> Unit, link: String, onLink: (String) -> Unit, onSearch: (base: String) -> Unit,
 ) {
     Text("Canción del momento", style = MaterialTheme.typography.titleMedium)
-    OutlinedTextField(titulo, onTitulo, label = { Text("Canción y artista") }, singleLine = true,
-        leadingIcon = { Icon(Icons.Filled.MusicNote, null) }, keyboardOptions = tecladoTexto,
+    OutlinedTextField(title, onTitle, label = { Text("Canción y artista") }, singleLine = true,
+        leadingIcon = { Icon(Icons.Filled.MusicNote, null) }, keyboardOptions = textKeyboard,
         placeholder = { Text("Vivir mi vida · Marc Anthony") }, modifier = Modifier.fillMaxWidth())
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = { onBuscar("https://www.youtube.com/results?search_query=") }, enabled = titulo.isNotBlank()) { Text("Buscar en YouTube") }
-        OutlinedButton(onClick = { onBuscar("https://open.spotify.com/search/") }, enabled = titulo.isNotBlank()) { Text("En Spotify") }
+        OutlinedButton(onClick = { onSearch("https://www.youtube.com/results?search_query=") }, enabled = title.isNotBlank()) { Text("Buscar en YouTube") }
+        OutlinedButton(onClick = { onSearch("https://open.spotify.com/search/") }, enabled = title.isNotBlank()) { Text("En Spotify") }
     }
-    OutlinedTextField(enlace, onEnlace, label = { Text("Enlace de la canción (opcional)") }, singleLine = true,
+    OutlinedTextField(link, onLink, label = { Text("Enlace de la canción (opcional)") }, singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
         placeholder = { Text("Pega aquí el enlace de YouTube o Spotify") }, modifier = Modifier.fillMaxWidth())
-    Ayuda("Tranquila: todo lo que llevas se guarda solo. En YouTube o Spotify toca Compartir → Copiar enlace y al volver se pega aquí.")
+    Help("Tranquila: todo lo que llevas se guarda solo. En YouTube o Spotify toca Compartir → Copiar enlace y al volver se pega aquí.")
 }
 
 /* ---------------- Preguntas para el futuro ---------------- */
 @Composable
-internal fun SeccionPreguntas(preguntas: List<String>, onQuitar: (Int) -> Unit, onAgregar: (String) -> Unit) {
-    var nueva by remember { mutableStateOf("") }
+internal fun QuestionsSection(questions: List<String>, onRemove: (Int) -> Unit, onAdd: (String) -> Unit) {
+    var newOne by remember { mutableStateOf("") }
     Text("Preguntas para tu yo del futuro", style = MaterialTheme.typography.titleMedium)
-    preguntas.forEachIndexed { i, q ->
+    questions.forEachIndexed { i, q ->
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.QuestionAnswer, null, tint = Gold, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp)); Text(q, Modifier.weight(1f))
-            IconButton(onClick = { onQuitar(i) }) { Icon(Icons.Filled.Close, com.timecapsule.app.ui.tr("Quitar pregunta")) }
+            IconButton(onClick = { onRemove(i) }) { Icon(Icons.Filled.Close, com.timecapsule.app.ui.tr("Quitar pregunta")) }
         }
     }
-    if (preguntas.size < ReglasCapsula.MAX_PREGUNTAS) {
+    if (questions.size < CapsuleRules.MAX_QUESTIONS) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            itemsIndexed(LetterTemplates.questions.filter { it !in preguntas }) { _, q ->
-                FilterChip(selected = false, onClick = { onAgregar(q) }, label = { Text(q) })
+            itemsIndexed(LetterTemplates.questions.filter { it !in questions }) { _, q ->
+                FilterChip(selected = false, onClick = { onAdd(q) }, label = { Text(q) })
             }
         }
-        OutlinedTextField(nueva, { nueva = it }, label = { Text("Escribe tu propia pregunta") }, singleLine = true,
-            keyboardOptions = tecladoTexto, modifier = Modifier.fillMaxWidth(),
-            trailingIcon = { IconButton(onClick = { if (nueva.isNotBlank()) { onAgregar(nueva); nueva = "" } }) { Icon(Icons.Filled.Add, com.timecapsule.app.ui.tr("Agregar")) } })
+        OutlinedTextField(newOne, { newOne = it }, label = { Text("Escribe tu propia pregunta") }, singleLine = true,
+            keyboardOptions = textKeyboard, modifier = Modifier.fillMaxWidth(),
+            trailingIcon = { IconButton(onClick = { if (newOne.isNotBlank()) { onAdd(newOne); newOne = "" } }) { Icon(Icons.Filled.Add, com.timecapsule.app.ui.tr("Agregar")) } })
     }
-    Ayuda("Las responderás cuando la cápsula se abra.")
+    Help("Las responderás cuando la cápsula se abra.")
 }
 
 /* ---------------- Fotos y videos ---------------- */
 @Composable
-internal fun SeccionMedios(medios: List<PickedItem>, onGaleria: () -> Unit, onCamara: () -> Unit, onQuitar: (Int) -> Unit) {
+internal fun MediaSection(media: List<PickedItem>, onGallery: () -> Unit, onCamera: () -> Unit, onRemove: (Int) -> Unit) {
     Text("Fotos y videos", style = MaterialTheme.typography.titleMedium)
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedButton(onClick = onGaleria) { Icon(Icons.Filled.PhotoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Galería") }
-        OutlinedButton(onClick = onCamara) { Icon(Icons.Filled.PhotoCamera, null); Spacer(Modifier.width(6.dp)); Text("Cámara") }
+        OutlinedButton(onClick = onGallery) { Icon(Icons.Filled.PhotoLibrary, null); Spacer(Modifier.width(6.dp)); Text("Galería") }
+        OutlinedButton(onClick = onCamera) { Icon(Icons.Filled.PhotoCamera, null); Spacer(Modifier.width(6.dp)); Text("Cámara") }
     }
-    if (medios.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        itemsIndexed(medios, key = { _, m -> m.uri.toString() }) { i, m ->
+    if (media.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        itemsIndexed(media, key = { _, m -> m.uri.toString() }) { i, m ->
             Box(Modifier.size(92.dp).clip(RoundedCornerShape(6.dp)).background(NightRaised)) {
                 if (m.kind == "photo") AsyncImage(m.uri, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 else Icon(Icons.Filled.Videocam, com.timecapsule.app.ui.tr("Video"), tint = Gold, modifier = Modifier.align(Alignment.Center).size(36.dp))
-                IconButton(onClick = { onQuitar(i) },
+                IconButton(onClick = { onRemove(i) },
                     modifier = Modifier.align(Alignment.TopEnd).size(28.dp).padding(3.dp).clip(CircleShape).background(Night)) {
                     Icon(Icons.Filled.Close, com.timecapsule.app.ui.tr("Quitar"), modifier = Modifier.size(16.dp))
                 }
             }
         }
     }
-    Ayuda("${medios.size} seleccionados · videos de máximo 50 MB")
+    Help("${media.size} seleccionados · videos de máximo 50 MB")
 }
 
 /* ---------------- Cuándo se abre ---------------- */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun SeccionFecha(usarFecha: Boolean, onUsarFecha: (Boolean) -> Unit, abreEl: Instant?, onAbreEl: (Instant) -> Unit, onElegirFecha: () -> Unit) {
-    SwitchRow("Abrir en una fecha", usarFecha, onUsarFecha)
-    if (!usarFecha) return
+internal fun DateSection(useDate: Boolean, onUseDate: (Boolean) -> Unit, opensOn: Instant?, onOpensOn: (Instant) -> Unit, onPickDate: () -> Unit) {
+    SwitchRow("Abrir en una fecha", useDate, onUseDate)
+    if (!useDate) return
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ReglasCapsula.opcionesDeFecha.forEach { (texto, meses) ->
-            val fecha = ReglasCapsula.fechaEn(meses)
-            FilterChip(selected = ReglasCapsula.mismaFecha(abreEl, fecha), onClick = { onAbreEl(fecha) }, label = { Text(texto) })
+        CapsuleRules.dateOptions.forEach { (text, months) ->
+            val date = CapsuleRules.dateIn(months)
+            FilterChip(selected = CapsuleRules.sameDate(opensOn, date), onClick = { onOpensOn(date) }, label = { Text(text) })
         }
     }
-    OutlinedButton(onClick = onElegirFecha, modifier = Modifier.fillMaxWidth()) {
+    OutlinedButton(onClick = onPickDate, modifier = Modifier.fillMaxWidth()) {
         Icon(Icons.Filled.Schedule, null); Spacer(Modifier.width(8.dp))
-        Text(abreEl?.let { "Se abre el ${it.fmtDateTime()}" } ?: "Elegir fecha y hora")
+        Text(opensOn?.let { "Se abre el ${it.fmtDateTime()}" } ?: "Elegir fecha y hora")
     }
-    Ayuda("Ese día te llega una notificación y la cápsula se abre sola.")
+    Help("Ese día te llega una notificación y la cápsula se abre sola.")
 }
 
 /* ---------------- Clave para abrirla antes ---------------- */
 @Composable
-internal fun SeccionClave(
-    usarClave: Boolean, onUsarClave: (Boolean) -> Unit,
-    clave: String, onClave: (String) -> Unit, repetida: String, onRepetida: (String) -> Unit,
+internal fun KeySection(
+    useKey: Boolean, onUseKey: (Boolean) -> Unit,
+    key: String, onKey: (String) -> Unit, repeated: String, onRepeated: (String) -> Unit,
 ) {
-    SwitchRow("Poder abrirla antes con una clave", usarClave, onUsarClave)
-    if (!usarClave) return
-    var verClave by remember { mutableStateOf(false) }
-    val vt = if (verClave) VisualTransformation.None else PasswordVisualTransformation()
-    val ojo = @Composable {
-        IconButton(onClick = { verClave = !verClave }) {
-            Icon(if (verClave) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, com.timecapsule.app.ui.tr(if (verClave) "Ocultar" else "Mostrar"))
+    SwitchRow("Poder abrirla antes con una clave", useKey, onUseKey)
+    if (!useKey) return
+    var showKey by remember { mutableStateOf(false) }
+    val vt = if (showKey) VisualTransformation.None else PasswordVisualTransformation()
+    val eye = @Composable {
+        IconButton(onClick = { showKey = !showKey }) {
+            Icon(if (showKey) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, com.timecapsule.app.ui.tr(if (showKey) "Ocultar" else "Mostrar"))
         }
     }
-    OutlinedTextField(clave, onClave, label = { Text("Clave") }, singleLine = true,
-        leadingIcon = { Icon(Icons.Filled.Key, null) }, trailingIcon = ojo, visualTransformation = vt,
+    OutlinedTextField(key, onKey, label = { Text("Clave") }, singleLine = true,
+        leadingIcon = { Icon(Icons.Filled.Key, null) }, trailingIcon = eye, visualTransformation = vt,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(repetida, onRepetida, label = { Text("Repite la clave") }, singleLine = true,
-        visualTransformation = vt, isError = repetida.isNotEmpty() && clave != repetida,
+    OutlinedTextField(repeated, onRepeated, label = { Text("Repite la clave") }, singleLine = true,
+        visualTransformation = vt, isError = repeated.isNotEmpty() && key != repeated,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth())
-    Ayuda("Con esta clave la abres cuando quieras. Se guarda cifrada: si la olvidas, nadie puede recuperarla, " +
+    Help("Con esta clave la abres cuando quieras. Se guarda cifrada: si la olvidas, nadie puede recuperarla, " +
         "pero la cápsula igual se abrirá en su fecha.")
 }
 
 /* ---------------- Dónde (lugar, radio y ruta) ---------------- */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun SeccionLugar(
-    usarLugar: Boolean, onUsarLugar: (Boolean) -> Unit,
-    buscando: Boolean, lat: Double?, lng: Double?, precision: Int?, direccion: String?,
-    cercanos: List<NearbyPlace>, nombre: String, onNombre: (String) -> Unit, onActualizar: () -> Unit,
-    soloAqui: Boolean, onSoloAqui: (Boolean) -> Unit, radio: Int, onRadio: (Int) -> Unit,
-    rutas: List<Route>, rutaId: String?, onRuta: (String?) -> Unit, onCrearRuta: (String) -> Unit,
+internal fun PlaceSection(
+    usePlace: Boolean, onUsePlace: (Boolean) -> Unit,
+    searching: Boolean, lat: Double?, lng: Double?, precision: Int?, address: String?,
+    nearbyPlaces: List<NearbyPlace>, name: String, onName: (String) -> Unit, onRefresh: () -> Unit,
+    onlyHere: Boolean, onOnlyHere: (Boolean) -> Unit, radius: Int, onRadius: (Int) -> Unit,
+    routes: List<Route>, routeIdValue: String?, onRoute: (String?) -> Unit, onCreateRoute: (String) -> Unit,
 ) {
-    SwitchRow("Guardar el lugar", usarLugar, onUsarLugar)
-    if (!usarLugar) return
+    SwitchRow("Guardar el lugar", usePlace, onUsePlace)
+    if (!usePlace) return
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (buscando) Row(verticalAlignment = Alignment.CenterVertically) {
+        if (searching) Row(verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
             Spacer(Modifier.width(10.dp)); Text("Buscando dónde estás…", color = Muted)
         } else if (lat != null) {
-            Meta(Icons.Filled.Place, direccion ?: "Ubicación registrada", Cream)
-            Ayuda("%.5f, %.5f · precisión %d m".format(lat, lng, precision ?: 0))
+            Meta(Icons.Filled.Place, address ?: "Ubicación registrada", Cream)
+            Help("%.5f, %.5f · precisión %d m".format(lat, lng, precision ?: 0))
         } else Text("Aún no tenemos tu ubicación.", color = Muted)
     }
-    if (cercanos.isNotEmpty()) {
+    if (nearbyPlaces.isNotEmpty()) {
         Text("¿Dónde estás? Toca el lugar:", style = MaterialTheme.typography.titleSmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            cercanos.forEach { p ->
-                FilterChip(selected = nombre == p.name, onClick = { onNombre(p.name) }, label = { Text("${p.name} · ${p.kind} · ${p.distance} m") })
+            nearbyPlaces.forEach { p ->
+                FilterChip(selected = name == p.name, onClick = { onName(p.name) }, label = { Text("${p.name} · ${p.kind} · ${p.distance} m") })
             }
         }
     }
-    OutlinedTextField(nombre, onNombre, label = { Text("Nombre del lugar") },
+    OutlinedTextField(name, onName, label = { Text("Nombre del lugar") },
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
         placeholder = { Text("Restaurante, casa de la abuela…") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-    OutlinedButton(onClick = onActualizar, enabled = !buscando, modifier = Modifier.fillMaxWidth()) {
+    OutlinedButton(onClick = onRefresh, enabled = !searching, modifier = Modifier.fillMaxWidth()) {
         Icon(Icons.Filled.MyLocation, null); Spacer(Modifier.width(8.dp)); Text("Actualizar mi ubicación")
     }
-    Ayuda("Cuando vuelvas a este lugar te llegará una notificación con estos recuerdos.")
-    SwitchRow("Solo se abre estando en este lugar", soloAqui, onSoloAqui)
+    Help("Cuando vuelvas a este lugar te llegará una notificación con estos recuerdos.")
+    SwitchRow("Solo se abre estando en este lugar", onlyHere, onOnlyHere)
     Text("¿Qué tan cerca hay que estar?", style = MaterialTheme.typography.titleSmall)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(50 to "50 m", 100 to "100 m", 150 to "150 m", 500 to "500 m", 1000 to "1 km").forEach { (m, l) ->
-            FilterChip(selected = radio == m, onClick = { onRadio(m) }, label = { Text(l) })
+            FilterChip(selected = radius == m, onClick = { onRadius(m) }, label = { Text(l) })
         }
     }
     // Ruta de cápsulas
-    var nuevaRuta by remember { mutableStateOf("") }
+    var newRoute by remember { mutableStateOf("") }
     Meta(Icons.Filled.Route, "Ruta de cápsulas (se abren en orden)", Cream)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(selected = rutaId == null, onClick = { onRuta(null) }, label = { Text("Ninguna") })
-        rutas.forEach { r -> FilterChip(selected = rutaId == r.id, onClick = { onRuta(r.id) }, label = { TextoPropio(r.title) }) }
+        FilterChip(selected = routeIdValue == null, onClick = { onRoute(null) }, label = { Text("Ninguna") })
+        routes.forEach { r -> FilterChip(selected = routeIdValue == r.id, onClick = { onRoute(r.id) }, label = { CustomText(r.title) }) }
     }
-    OutlinedTextField(nuevaRuta, { nuevaRuta = it }, label = { Text("Crear una ruta nueva") }, singleLine = true,
-        keyboardOptions = tecladoTexto, modifier = Modifier.fillMaxWidth(),
-        trailingIcon = { IconButton(onClick = { if (nuevaRuta.isNotBlank()) { onCrearRuta(nuevaRuta); nuevaRuta = "" } }) { Icon(Icons.Filled.Add, com.timecapsule.app.ui.tr("Crear ruta")) } })
-    if (rutaId != null) Ayuda("Esta cápsula solo se abrirá cuando la anterior de la ruta esté abierta.")
+    OutlinedTextField(newRoute, { newRoute = it }, label = { Text("Crear una ruta nueva") }, singleLine = true,
+        keyboardOptions = textKeyboard, modifier = Modifier.fillMaxWidth(),
+        trailingIcon = { IconButton(onClick = { if (newRoute.isNotBlank()) { onCreateRoute(newRoute); newRoute = "" } }) { Icon(Icons.Filled.Add, com.timecapsule.app.ui.tr("Crear ruta")) } })
+    if (routeIdValue != null) Help("Esta cápsula solo se abrirá cuando la anterior de la ruta esté abierta.")
 }
 
 /* ---------------- Compartir ---------------- */
 @Composable
-internal fun SeccionCompartir(
-    correos: String, onCorreos: (String) -> Unit,
-    colaborativa: Boolean, onColaborativa: (Boolean) -> Unit, abrirJuntos: Boolean, onAbrirJuntos: (Boolean) -> Unit,
+internal fun ShareSection(
+    emails: String, onEmails: (String) -> Unit,
+    collaborative: Boolean, onCollaborative: (Boolean) -> Unit, openTogether: Boolean, onOpenTogether: (Boolean) -> Unit,
 ) {
-    OutlinedTextField(correos, onCorreos, label = { Text("Compartir con (correos)") },
+    OutlinedTextField(emails, onEmails, label = { Text("Compartir con (correos)") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         placeholder = { Text("mama@correo.com, amigo@correo.com") }, modifier = Modifier.fillMaxWidth())
-    Ayuda("Deben tener cuenta en Time Capsule. Verán la cápsula cuando se abra. También puedes invitar por enlace o QR después de crearla.")
-    if (ReglasCapsula.correos(correos).isNotEmpty()) {
-        SwitchRow("Pueden agregar sus fotos y cartas (colaborativa)", colaborativa, onColaborativa)
-        SwitchRow("Abrir juntos: se abre cuando todos lo acepten", abrirJuntos, onAbrirJuntos)
+    Help("Deben tener cuenta en Time Capsule. Verán la cápsula cuando se abra. También puedes invitar por enlace o QR después de crearla.")
+    if (CapsuleRules.emails(emails).isNotEmpty()) {
+        SwitchRow("Pueden agregar sus fotos y cartas (colaborativa)", collaborative, onCollaborative)
+        SwitchRow("Abrir juntos: se abre cuando todos lo acepten", openTogether, onOpenTogether)
     }
 }
 

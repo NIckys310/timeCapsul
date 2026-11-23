@@ -31,7 +31,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import com.timecapsule.app.ui.Text
 import com.timecapsule.app.ui.tr
-import com.timecapsule.app.data.ReglasContrasena
+import com.timecapsule.app.data.PasswordRules
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -64,10 +64,10 @@ fun AuthScreen() {
     val scope = rememberCoroutineScope()
     val ctx = androidx.compose.ui.platform.LocalContext.current
 
-    fun conGoogle() {
+    fun withGoogle() {
         msg = null; busy = true
         scope.launch {
-            runCatching { com.timecapsule.app.data.GoogleLogin.entrar(ctx) }.onFailure { msg = Repo.friendly(it) }
+            runCatching { com.timecapsule.app.data.GoogleLogin.enter(ctx) }.onFailure { msg = Repo.friendly(it) }
             busy = false
         }
     }
@@ -77,7 +77,7 @@ fun AuthScreen() {
         if (email.isBlank() || pass.isBlank() || (register && name.isBlank())) {
             msg = "Completa los datos."; return
         }
-        if (register && !ReglasContrasena.esSegura(pass)) {
+        if (register && !PasswordRules.isSafe(pass)) {
             msg = "Tu contraseña aún no es segura. Mira lo que le falta."; return
         }
         busy = true
@@ -136,9 +136,9 @@ fun AuthScreen() {
             // Lo que le falta a la contraseña, en vivo mientras se escribe
             Spacer(Modifier.height(8.dp))
             Column(Modifier.fillMaxWidth()) {
-                ReglasContrasena.reglas.forEach { r ->
-                    val ok = r.cumple(pass)
-                    Text((if (ok) "✓ " else "○ ") + tr(r.texto), color = if (ok) MaterialTheme.colorScheme.primary else Muted,
+                PasswordRules.rules.forEach { r ->
+                    val ok = r.meets(pass)
+                    Text((if (ok) "✓ " else "○ ") + tr(r.text), color = if (ok) MaterialTheme.colorScheme.primary else Muted,
                         style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -149,11 +149,11 @@ fun AuthScreen() {
             if (busy) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
             else Text(if (register) "Crear mi cuenta" else "Entrar")
         }
-        if (com.timecapsule.app.data.GoogleLogin.disponible()) {
+        if (com.timecapsule.app.data.GoogleLogin.available()) {
             Spacer(Modifier.height(14.dp))
             Text("— o —", color = Muted, fontFamily = Typewriter)
             Spacer(Modifier.height(14.dp))
-            androidx.compose.material3.OutlinedButton(onClick = ::conGoogle, enabled = !busy, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            androidx.compose.material3.OutlinedButton(onClick = ::withGoogle, enabled = !busy, modifier = Modifier.fillMaxWidth().height(52.dp)) {
                 Text("G", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.size(10.dp))
                 Text("Continuar con Google")

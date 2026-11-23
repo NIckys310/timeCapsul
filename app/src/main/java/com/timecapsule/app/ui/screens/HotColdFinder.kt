@@ -125,19 +125,19 @@ fun HotColdFinder(c: Capsule) {
             }) { Text("Empezar a buscar") }
         } else {
             val d = dist
-            val pista = com.timecapsule.app.util.pistaCalienteFrio(d, c.radiusM)
-            val color = when (pista) {
-                com.timecapsule.app.util.Pista.BUSCANDO -> p.muted
-                com.timecapsule.app.util.Pista.LLEGASTE -> p.olive
-                com.timecapsule.app.util.Pista.MUY_CALIENTE -> p.wax
-                com.timecapsule.app.util.Pista.CALIENTE, com.timecapsule.app.util.Pista.TIBIO -> p.gold
-                com.timecapsule.app.util.Pista.FRIO -> androidx.compose.ui.graphics.Color(0xFF6FA8C9)
+            val hint = com.timecapsule.app.util.hotColdHint(d, c.radiusM)
+            val color = when (hint) {
+                com.timecapsule.app.util.Hint.BUSCANDO -> p.muted
+                com.timecapsule.app.util.Hint.LLEGASTE -> p.olive
+                com.timecapsule.app.util.Hint.MUY_CALIENTE -> p.wax
+                com.timecapsule.app.util.Hint.CALIENTE, com.timecapsule.app.util.Hint.TIBIO -> p.gold
+                com.timecapsule.app.util.Hint.FRIO -> androidx.compose.ui.graphics.Color(0xFF6FA8C9)
             }
-            val label = pista.texto
+            val label = hint.text
             Text(label, style = MaterialTheme.typography.headlineSmall, color = color)
             if (d != null) {
-                val trend = com.timecapsule.app.util.tendencia(d, prev)
-                Text("${com.timecapsule.app.util.distanciaTexto(d)} · $trend", fontFamily = Typewriter, color = p.muted)
+                val trend = com.timecapsule.app.util.trend(d, prev)
+                Text("${com.timecapsule.app.util.distanceText(d)} · $trend", fontFamily = Typewriter, color = p.muted)
                 LinearProgressIndicator(progress = { (1f - (d / 5000f)).coerceIn(0.03f, 1f) }, modifier = Modifier.fillMaxWidth(), color = color)
             }
             TextButton(onClick = { searching = false }) { Text("Detener") }

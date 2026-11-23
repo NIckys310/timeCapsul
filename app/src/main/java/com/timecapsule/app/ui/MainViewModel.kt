@@ -1,6 +1,6 @@
 package com.timecapsule.app.ui
 
-import com.timecapsule.app.util.Fallos
+import com.timecapsule.app.util.ErrorLog
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -44,7 +44,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun signOut() = viewModelScope.launch {
-        runCatching { Repo.signOut() }.onFailure { Fallos.registrar("MainViewModel:45", it) }
+        runCatching { Repo.signOut() }.onFailure { ErrorLog.record("MainViewModel:45", it) }
         Prefs.clear(getApplication())
         _capsules.value = emptyList()
         timeline.value = null

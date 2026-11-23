@@ -9,7 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** El borrador que evita perder la cápsula al salir a Spotify o YouTube. */
-class BorradorTest {
+class DraftTest {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test fun `un borrador nuevo esta vacio`() = assertTrue(SavedDraft().isEmpty)
@@ -34,17 +34,17 @@ class BorradorTest {
             voiceNotes = listOf("/a.m4a"), unlockAtEpoch = 1_900_000_000_000, songTitle = "Canción", songUrl = "https://youtu.be/x",
             questions = listOf("¿Volviste?"), radius = 300, openTogether = true, routeId = "r-1",
         )
-        val texto = json.encodeToString(SavedDraft.serializer(), b)
-        assertEquals(b, json.decodeFromString(SavedDraft.serializer(), texto))
+        val text = json.encodeToString(SavedDraft.serializer(), b)
+        assertEquals(b, json.decodeFromString(SavedDraft.serializer(), text))
     }
 
     @Test fun `un borrador viejo con campos que ya no existen se sigue abriendo`() {
-        val viejo = """{"title":"Hola","campo_que_ya_no_existe":true}"""
-        assertEquals("Hola", json.decodeFromString(SavedDraft.serializer(), viejo).title)
+        val old = """{"title":"Hola","campo_que_ya_no_existe":true}"""
+        assertEquals("Hola", json.decodeFromString(SavedDraft.serializer(), old).title)
     }
 
     @Test fun `la clave de la capsula nunca se guarda en el borrador`() {
-        val campos = SavedDraft.serializer().descriptor.let { d -> (0 until d.elementsCount).map { d.getElementName(it).lowercase() } }
-        assertFalse(campos.toString(), campos.any { "key" in it || "clave" in it || "password" in it || "pin" in it })
+        val fields = SavedDraft.serializer().descriptor.let { d -> (0 until d.elementsCount).map { d.getElementName(it).lowercase() } }
+        assertFalse(fields.toString(), fields.any { "key" in it || "clave" in it || "password" in it || "pin" in it })
     }
 }

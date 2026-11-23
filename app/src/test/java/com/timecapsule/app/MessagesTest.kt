@@ -8,8 +8,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /** Errores en español sencillo y la línea de tiempo guardada. */
-class MensajesTest {
-    private fun msg(texto: String?) = Repo.friendly(RuntimeException(texto))
+class MessagesTest {
+    private fun msg(text: String?) = Repo.friendly(RuntimeException(text))
 
     @Test fun `contrasena incorrecta`() = assertEquals("Correo o contraseña incorrectos.", msg("Invalid login credentials"))
     @Test fun `correo sin confirmar`() = assertEquals("Confirma tu correo con el enlace que te enviamos.", msg("Email not confirmed"))

@@ -2,15 +2,15 @@ package com.timecapsule.app
 
 import android.app.Application
 import com.timecapsule.app.notify.Notifier
-import com.timecapsule.app.ui.Idioma
-import com.timecapsule.app.util.Fallos
+import com.timecapsule.app.ui.Language
+import com.timecapsule.app.util.ErrorLog
 import org.osmdroid.config.Configuration
 
 class TimeCapsuleApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        Fallos.iniciar(this)
-        Idioma.cargar(this)
+        ErrorLog.start(this)
+        Language.load(this)
         Notifier.createChannels(this)
         // Mapas de OpenStreetMap (no requieren clave)
         Configuration.getInstance().apply {

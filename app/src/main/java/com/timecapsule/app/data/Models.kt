@@ -98,24 +98,24 @@ data class NewMedia(
 /* ---------- Línea de tiempo creada por la IA ---------- */
 @Serializable
 data class Timeline(
-    val resumen: String = "",
-    val capitulos: List<Chapter> = emptyList(),
-    val lugares: List<PlaceNote> = emptyList(),
+    @SerialName("resumen") val summary: String = "",
+    @SerialName("capitulos") val chapters: List<Chapter> = emptyList(),
+    @SerialName("lugares") val places: List<PlaceNote> = emptyList(),
 )
 
 @Serializable
 data class Chapter(
-    val titulo: String,
-    val periodo: String = "",
-    val descripcion: String = "",
+    @SerialName("titulo") val title: String,
+    @SerialName("periodo") val period: String = "",
+    @SerialName("descripcion") val description: String = "",
     val emoji: String = "✨",
-    val capsulas: List<String> = emptyList(),
+    @SerialName("capsulas") val capsules: List<String> = emptyList(),
 )
 
 @Serializable
 data class PlaceNote(
-    val nombre: String,
-    val resumen: String = "",
+    @SerialName("nombre") val name: String,
+    @SerialName("resumen") val summary: String = "",
     val lat: Double? = null,
     val lng: Double? = null,
 )
@@ -167,7 +167,7 @@ data class PickedItem(val uri: android.net.Uri, val kind: String)
 
 /** Plantillas de carta: cada una trae un inicio que la persona completa. */
 object LetterTemplates {
-    private val cartas = listOf(
+    private val letters = listOf(
         "futuro" to ("Mi yo del futuro" to """Querido yo del futuro:
 
 Hoy es un día como cualquiera y quiero contarte cómo me siento…
@@ -213,21 +213,21 @@ Estamos en… y lo que más me sorprendió fue…
 Prometo volver para…
 """),
     )
-    val all get() = cartas.map { (id, par) -> id to (tr(par.first) to tr(par.second)) }
+    val all get() = letters.map { (id, par) -> id to (tr(par.first) to tr(par.second)) }
 
-    private val preguntas = listOf(
+    private val questionPrompts = listOf(
         "¿Sigues viviendo en el mismo lugar?", "¿Cumpliste el sueño que tenías hoy?", "¿Quiénes siguen siendo tus mejores amigos?",
         "¿Qué canción te gusta ahora?", "¿Qué le dirías a tu yo de hoy?", "¿Sigues estudiando o trabajando en lo mismo?",
     )
 
-    val questions get() = preguntas.map { tr(it) }
+    val questions get() = questionPrompts.map { tr(it) }
 }
 
 /* ---------- Álbum animado (textos de la IA) ---------- */
 @Serializable
 data class Album(
     val intro: String = "",
-    val fotos: List<String> = emptyList(),
-    val cierre: String = "",
+    @SerialName("fotos") val photos: List<String> = emptyList(),
+    @SerialName("cierre") val closing: String = "",
     val paths: List<String> = emptyList(),
 )

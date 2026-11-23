@@ -31,7 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import com.timecapsule.app.ui.Text
-import com.timecapsule.app.ui.TextoPropio
+import com.timecapsule.app.ui.CustomText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -64,10 +64,10 @@ fun TimelineScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     val byId = caps.associateBy { it.id }
 
     // Sin IA: capítulos por mes. Con IA: capítulos con nombre y descripción.
-    val chapters: List<Chapter> = tl?.capitulos?.takeIf { it.isNotEmpty() } ?: caps
+    val chapters: List<Chapter> = tl?.chapters?.takeIf { it.isNotEmpty() } ?: caps
         .sortedBy { it.createdInstant }
         .groupBy { it.createdInstant.fmtMonth() }
-        .map { (month, list) -> Chapter(titulo = month, emoji = "🗓️", capsulas = list.map { it.id }) }
+        .map { (month, list) -> Chapter(title = month, emoji = "🗓️", capsules = list.map { it.id }) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -78,7 +78,7 @@ fun TimelineScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(NightRaised).padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Meta(Icons.Filled.AutoAwesome, "Tu historia, contada por IA", Gold)
-                Text(tl?.resumen?.ifBlank { null } ?: "La IA agrupa tus cápsulas en capítulos de tu vida y cuenta lo que vivías en cada uno.",
+                Text(tl?.summary?.ifBlank { null } ?: "La IA agrupa tus cápsulas en capítulos de tu vida y cuenta lo que vivías en cada uno.",
                     color = Cream)
                 if (busy) Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -90,7 +90,7 @@ fun TimelineScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         }
         if (caps.isEmpty()) item { EmptyState("Aún no hay historia", "Crea tu primera cápsula y aparecerá aquí.") }
         items(chapters.size) { i ->
-            ChapterNode(chapters[i], chapters[i].capsulas.mapNotNull { byId[it] }, isLast = i == chapters.lastIndex, onOpen)
+            ChapterNode(chapters[i], chapters[i].capsules.mapNotNull { byId[it] }, isLast = i == chapters.lastIndex, onOpen)
         }
     }
 }
@@ -108,10 +108,10 @@ private fun ChapterNode(ch: Chapter, caps: List<Capsule>, isLast: Boolean, onOpe
         }
         Column(Modifier.weight(1f).padding(bottom = 26.dp).animateContentSize()) {
             Column(Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(top = 4.dp)) {
-                Text(ch.titulo, style = MaterialTheme.typography.titleLarge, color = Cream)
-                if (ch.periodo.isNotBlank()) Text(ch.periodo, color = Coral, style = MaterialTheme.typography.labelLarge)
-                if (ch.descripcion.isNotBlank()) {
-                    Spacer(Modifier.height(4.dp)); Text(ch.descripcion, color = Muted)
+                Text(ch.title, style = MaterialTheme.typography.titleLarge, color = Cream)
+                if (ch.period.isNotBlank()) Text(ch.period, color = Coral, style = MaterialTheme.typography.labelLarge)
+                if (ch.description.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp)); Text(ch.description, color = Muted)
                 }
             }
             AnimatedVisibility(expanded) {
@@ -128,7 +128,7 @@ private fun ChapterNode(ch: Chapter, caps: List<Capsule>, isLast: Boolean, onOpe
                             }
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
-                                TextoPropio(c.title, color = Cream, maxLines = 1)
+                                CustomText(c.title, color = Cream, maxLines = 1)
                                 Text(c.createdInstant.fmtDate() + (c.placeName?.let { " · $it" } ?: ""), color = Muted,
                                     style = MaterialTheme.typography.bodySmall, maxLines = 1)
                             }
