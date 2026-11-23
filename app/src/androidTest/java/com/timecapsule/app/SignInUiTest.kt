@@ -55,8 +55,8 @@ class SignInUiTest {
         compose.onNodeWithText("Crear cuenta").performClick()
         field("Contraseña").performTextInput("capsula")
         compose.onNodeWithText("○ Al menos 10 caracteres").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("✓ Una letra minúscula").assertIsDisplayed()
-        compose.onNodeWithText("○ Un símbolo (!@#$…)").assertIsDisplayed()
+        compose.onNodeWithText("✓ Una letra minúscula").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("○ Un símbolo (!@#$…)").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun doesNotAllowSignUpWithAWeakPassword() {
