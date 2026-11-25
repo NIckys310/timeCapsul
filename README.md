@@ -1,5 +1,9 @@
 # Time Capsule · App móvil (Android)
 
+## 🎬 Video de presentación
+
+**[▶ Ver el video de Time Capsule (4:45)](video/TimeCapsule_presentacion.mp4)**: qué problema resuelve, qué hace, una demo, la arquitectura, la calidad y los aprendizajes. Narrado por Nicoll Valentina.
+
 ## Estructura del repositorio
 ```
 timeCapsul/
